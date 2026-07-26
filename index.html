@@ -144,12 +144,34 @@
       </div>
 
       <template x-if="isConnected && pb && pb.authStore.isValid">
-        <button
-          @click="logout()"
-          class="text-[10px] font-bold tracking-widest bg-rose-50 hover:bg-rose-100 border border-rose-100 px-3.5 py-1.5 rounded-full text-rose-500 uppercase transition"
-        >
-          Deconectare
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            @click="opresteServerRemote()"
+            :disabled="oprireServerInCurs"
+            title="Oprește serverul PocketBase de pe calculator"
+            class="group relative w-7 h-7 flex items-center justify-center rounded-full border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50 active:scale-90 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="w-3.5 h-3.5"
+              :class="oprireServerInCurs ? 'animate-spin' : ''"
+            >
+              <path d="M12 2v6" />
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+            </svg>
+          </button>
+          <button
+            @click="logout()"
+            class="text-[10px] font-bold tracking-widest bg-rose-50 hover:bg-rose-100 border border-rose-100 px-3.5 py-1.5 rounded-full text-rose-500 uppercase transition"
+          >
+            Deconectare
+          </button>
+        </div>
       </template>
       <template x-if="!isConnected || !pb || !pb.authStore.isValid">
         <span
@@ -157,6 +179,20 @@
         >LOG IN</span>
       </template>
     </header>
+
+    <!-- Mesaj rezultat oprire server (apare temporar sub header) -->
+    <template x-if="oprireServerRezultat">
+      <div
+        class="max-w-md mx-auto px-4 pt-2"
+        x-transition
+      >
+        <p
+          class="text-[10px] font-semibold text-center py-1.5 rounded-full"
+          :class="oprireServerRezultat.succes ? 'bg-teal-50 text-teal-600' : 'bg-rose-50 text-rose-500'"
+          x-text="oprireServerRezultat.mesaj"
+        ></p>
+      </div>
+    </template>
 
     <!-- CONTAINER APLICAȚIE -->
     <main class="max-w-md mx-auto p-4 space-y-6 relative">
@@ -199,7 +235,7 @@
                 type="password"
                 name="password"
                 required
-                placeholder="••••••••"
+                placeholder="Introdu Parola"
                 class="w-full glass-input rounded-2xl p-3 text-xs text-slate-800 focus:outline-none"
               />
             </div>
@@ -234,11 +270,39 @@
           />
         </svg>
         <h2 class="text-sm font-bold text-slate-700">
-          Eroare Conexiune Bază de Date
+          Conexiune indisponibilă cu baza de date
         </h2>
         <p class="text-[11px] text-slate-400 leading-relaxed">
-          Porniți serverul local PocketBase (secret).
+          Serverul PocketBase nu răspunde în acest moment. Vă rugăm porniți
+          serverul local; aplicația se va reconecta automat.
         </p>
+        <button
+          @click="verificaAcumConexiune()"
+          :disabled="verificareManualaInCurs"
+          class="text-[10px] font-bold tracking-widest bg-rose-50 hover:bg-rose-100 border border-rose-100 disabled:opacity-50 px-4 py-2 rounded-full text-rose-500 uppercase transition"
+          x-text="verificareManualaInCurs ? 'Se verifică conexiunea...' : 'Reîncearcă conexiunea'"
+        ></button>
+
+        <div class="pt-2 border-t border-slate-200/60 space-y-2">
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            Sau pornește serverul chiar de aici (necesită Tailscale activ pe
+            acest dispozitiv).
+          </p>
+          <button
+            @click="pornesteServerRemote()"
+            :disabled="pornireServerInCurs"
+            class="text-[10px] font-bold tracking-widest bg-teal-50 hover:bg-teal-100 border border-teal-100 disabled:opacity-50 px-4 py-2 rounded-full text-teal-600 uppercase transition"
+            x-text="pornireServerInCurs ? 'Se pornește serverul...' : 'Pornește serverul PocketBase'"
+          ></button>
+
+          <template x-if="pornireServerRezultat">
+            <p
+              class="text-[10px] font-semibold"
+              :class="pornireServerRezultat.succes ? 'text-teal-600' : 'text-rose-500'"
+              x-text="pornireServerRezultat.mesaj"
+            ></p>
+          </template>
+        </div>
       </section>
 
       <!-- APLICAȚIA ACTIVĂ -->
@@ -3399,6 +3463,25 @@
           registruDetaliuModalActiv: false,
           registruDetaliuTranzactie: null,
 
+          // Agentul Python de pe calculatorul Windows (vezi agent.py) - ascultă pe acest URL,
+          // expus pe rețeaua ta Tailscale, și pornește automat PocketBase la comandă. Butonul
+          // "Pornește serverul PocketBase" de pe ecranul offline îl apelează direct (fetch simplu)
+          // - funcționează atâta timp cât dispozitivul e conectat la Tailscale.
+          agentStartUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/start",
+          agentStopUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/stop",
+          agentToken: "54lytr5siRdx9zgHt3YlIc67t5orVXE7RE6_BdB1nwg",
+
+          // Stare pentru butonul manual "Reîncearcă acum" de pe ecranul offline.
+          verificareManualaInCurs: false,
+
+          // Stare pentru butonul "Pornește serverul PocketBase" (apel direct către agent.py).
+          pornireServerInCurs: false,
+          pornireServerRezultat: null,
+
+          // Stare pentru butonul "Oprește server" din header (apel direct către agent.py).
+          oprireServerInCurs: false,
+          oprireServerRezultat: null,
+
           async init() {
   if (typeof PocketBase !== "undefined") {
     try {
@@ -3413,6 +3496,122 @@
       this.isConnected = false;
       console.error("Eroare conectare PocketBase:", e); // adaugă asta ca să vezi ce pică exact
     }
+    this.pornesteVerificareConexiune();
+  }
+},
+
+// Verifică periodic (implicit la fiecare 8 secunde) dacă PocketBase mai răspunde. Fără asta,
+// odată ce conexiunea inițială reușește, aplicația nu mai detectează dacă baza de date pică
+// mai târziu (server oprit, rețea căzută etc.) - rămânea "blocată" cu date vechi pe ecran fără
+// nicio avertizare. Cu polling-ul de mai jos, în momentul în care health check-ul eșuează,
+// isConnected devine false și ecranul "Eroare Conexiune" (x-show="!isConnected") apare automat,
+// ascunzând restul aplicației - exact ca la pornirea aplicației fără server. Dacă serverul revine,
+// reconectăm și reîncărcăm datele automat, fără să fie nevoie de refresh manual de pagină.
+pornesteVerificareConexiune() {
+  if (this._verificareConexiuneInterval) return; // nu pornim de două ori polling-ul
+  this._verificareConexiuneInterval = setInterval(async () => {
+    if (!this.pb) return;
+    try {
+      await this.pb.health.check();
+      if (!this.isConnected) {
+        this.isConnected = true;
+        if (this.pb.authStore.isValid) {
+          await this.reimprospateazaFileToken();
+          await this.incarcaDateDinPocketBase();
+        }
+      }
+    } catch (e) {
+      this.isConnected = false;
+    }
+  }, 8000);
+},
+
+// Verificare manuală, la cerere (butonul "Reîncearcă acum" de pe ecranul offline) - utilă
+// când nu vrei să ții tab-ul deschis permanent doar ca să detecteze automat căderea, dar vrei
+// să afli imediat, fără să aștepți până la 8 secunde de polling, dacă serverul a fost pornit.
+async verificaAcumConexiune() {
+  if (!this.pb || this.verificareManualaInCurs) return;
+  this.verificareManualaInCurs = true;
+  try {
+    await this.pb.health.check();
+    this.isConnected = true;
+    if (this.pb.authStore.isValid) {
+      await this.reimprospateazaFileToken();
+      await this.incarcaDateDinPocketBase();
+    }
+  } catch (e) {
+    this.isConnected = false;
+  } finally {
+    this.verificareManualaInCurs = false;
+  }
+},
+
+// Apelează direct agentul de pe calculator (agent.py), prin URL-ul expus pe Tailscale, ca
+// să pornească PocketBase - fără notificare, fără pas intermediar. Necesită doar
+// ca acest dispozitiv să fie conectat la rețeaua Tailscale în momentul apăsării butonului.
+async pornesteServerRemote() {
+  if (this.pornireServerInCurs) return;
+  this.pornireServerInCurs = true;
+  this.pornireServerRezultat = null;
+  try {
+    const r = await fetch(this.agentStartUrl, {
+      method: "POST",
+      headers: { "X-Agent-Token": this.agentToken },
+    });
+    const data = await r.json();
+    this.pornireServerRezultat = {
+      succes: !!data.succes,
+      mesaj: data.mesaj || (data.succes ? "Serverul a pornit." : "Eroare la pornire."),
+    };
+    if (data.succes) {
+      // dăm imediat o verificare de conexiune, ca ecranul să se actualizeze fără să aștepte
+      // următorul polling automat de la 8 secunde
+      await this.verificaAcumConexiune();
+    }
+  } catch (e) {
+    this.pornireServerRezultat = {
+      succes: false,
+      mesaj:
+        "Nu am putut contacta agentul. Verifică dacă acest dispozitiv e conectat la Tailscale.",
+    };
+  } finally {
+    this.pornireServerInCurs = false;
+  }
+},
+
+// Apelează direct agentul de pe calculator (agent.py), prin URL-ul expus pe Tailscale, ca
+// să oprească PocketBase - folosit de butonul "Oprește server" din header. Necesită doar
+// ca acest dispozitiv să fie conectat la rețeaua Tailscale în momentul apăsării butonului.
+async opresteServerRemote() {
+  if (this.oprireServerInCurs) return;
+  if (!confirm("Sigur vrei să oprești serverul PocketBase de pe calculator?")) return;
+  this.oprireServerInCurs = true;
+  this.oprireServerRezultat = null;
+  try {
+    const r = await fetch(this.agentStopUrl, {
+      method: "POST",
+      headers: { "X-Agent-Token": this.agentToken },
+    });
+    const data = await r.json();
+    this.oprireServerRezultat = {
+      succes: !!data.succes,
+      mesaj: data.mesaj || (data.succes ? "Serverul a fost oprit." : "Eroare la oprire."),
+    };
+    // dăm imediat o verificare de conexiune, ca ecranul să se actualizeze fără să aștepte
+    // următorul polling automat de la 8 secunde
+    await this.verificaAcumConexiune();
+  } catch (e) {
+    this.oprireServerRezultat = {
+      succes: false,
+      mesaj:
+        "Nu am putut contacta agentul. Verifică dacă acest dispozitiv e conectat la Tailscale.",
+    };
+  } finally {
+    this.oprireServerInCurs = false;
+    // ascunde mesajul de rezultat după câteva secunde, la fel ca restul mesajelor temporare
+    setTimeout(() => {
+      this.oprireServerRezultat = null;
+    }, 6000);
   }
 },
 
