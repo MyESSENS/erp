@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PriorityERP - Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="icon-192.png">
+    <link rel="icon" type="image/x-icon" href="settings.png">
 
     <!-- ===== PWA: face aplicatia instalabila, fara tab de browser ===== -->
     <link rel="manifest" href="manifest.json" />
@@ -235,7 +235,7 @@
                 type="password"
                 name="password"
                 required
-                placeholder="Introdu Parola"
+                placeholder="••••••••"
                 class="w-full glass-input rounded-2xl p-3 text-xs text-slate-800 focus:outline-none"
               />
             </div>
@@ -288,6 +288,20 @@
             Sau pornește serverul chiar de aici (necesită Tailscale activ pe
             acest dispozitiv).
           </p>
+
+          <p
+            class="text-[10px] font-semibold flex items-center justify-center gap-1.5"
+            :class="agentPcStare === true ? 'text-teal-600' : (agentPcStare === false ? 'text-rose-500' : 'text-slate-400')"
+          >
+            <span
+              class="w-1.5 h-1.5 rounded-full"
+              :class="agentPcStare === true ? 'bg-teal-500' : (agentPcStare === false ? 'bg-rose-400' : 'bg-slate-300 animate-pulse')"
+            ></span>
+            <span
+              x-text="agentPcStare === true ? 'Calculator pornit - poți porni serverul' : (agentPcStare === false ? 'Calculatorul nu răspunde' : 'Se verifică calculatorul...')"
+            ></span>
+          </p>
+
           <button
             @click="pornesteServerRemote()"
             :disabled="pornireServerInCurs"
@@ -3469,10 +3483,17 @@
           // - funcționează atâta timp cât dispozitivul e conectat la Tailscale.
           agentStartUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/start",
           agentStopUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/stop",
+          agentStatusUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/status",
           agentToken: "54lytr5siRdx9zgHt3YlIc67t5orVXE7RE6_BdB1nwg",
 
           // Stare pentru butonul manual "Reîncearcă acum" de pe ecranul offline.
           verificareManualaInCurs: false,
+
+          // null = nu s-a verificat încă / e în curs, true = calculatorul răspunde (deci
+          // butonul de pornire are șanse să meargă), false = calculatorul nu răspunde deloc
+          // (probabil oprit sau fără Tailscale) - se reverifică automat cât timp ești pe
+          // ecranul de eroare conexiune.
+          agentPcStare: null,
 
           // Stare pentru butonul "Pornește serverul PocketBase" (apel direct către agent.py).
           pornireServerInCurs: false,
@@ -3495,6 +3516,7 @@
     } catch (e) {
       this.isConnected = false;
       console.error("Eroare conectare PocketBase:", e); // adaugă asta ca să vezi ce pică exact
+      this.verificaAgentPc();
     }
     this.pornesteVerificareConexiune();
   }
@@ -3515,6 +3537,7 @@ pornesteVerificareConexiune() {
       await this.pb.health.check();
       if (!this.isConnected) {
         this.isConnected = true;
+        this.agentPcStare = null;
         if (this.pb.authStore.isValid) {
           await this.reimprospateazaFileToken();
           await this.incarcaDateDinPocketBase();
@@ -3522,6 +3545,7 @@ pornesteVerificareConexiune() {
       }
     } catch (e) {
       this.isConnected = false;
+      this.verificaAgentPc();
     }
   }, 8000);
 },
@@ -3535,14 +3559,33 @@ async verificaAcumConexiune() {
   try {
     await this.pb.health.check();
     this.isConnected = true;
+    this.agentPcStare = null;
     if (this.pb.authStore.isValid) {
       await this.reimprospateazaFileToken();
       await this.incarcaDateDinPocketBase();
     }
   } catch (e) {
     this.isConnected = false;
+    this.verificaAgentPc();
   } finally {
     this.verificareManualaInCurs = false;
+  }
+},
+
+// Verifică (independent de PocketBase) dacă agentul de pe calculator răspunde deloc - adică
+// dacă acesta e pornit și conectat la Tailscale. Nu spune dacă PocketBase e pornit, doar dacă
+// are sens să apeși butonul "Pornește serverul PocketBase" - dacă nici calculatorul nu
+// răspunde, butonul oricum n-are cum să facă ceva. Foloseste un timeout scurt (4s) ca sa nu
+// stea ecranul agatat de fetch daca dispozitivul e chiar oprit.
+async verificaAgentPc() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const r = await fetch(this.agentStatusUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    this.agentPcStare = r.ok;
+  } catch (e) {
+    this.agentPcStare = false;
   }
 },
 
