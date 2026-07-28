@@ -5363,6 +5363,14 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             id="camera-frame"
             class="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"
           ></div>
+          <!-- Poza "înghețată" în momentul apăsării butonului - acoperă instant imaginea video
+               live, ca semn clar că fotografia a fost făcută deja și telefonul poate fi mișcat. -->
+          <template x-if="ocrCapturaPreview">
+            <img
+              :src="ocrCapturaPreview"
+              class="absolute inset-0 w-full h-full object-cover"
+            />
+          </template>
           <div
             class="absolute inset-6 border-2 border-rose-400/80 rounded-xl pointer-events-none"
             style="box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.25)"
@@ -5442,7 +5450,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             <div class="flex gap-2">
               <button
                 type="button"
-                @click="ocrRezultat = ''"
+                @click="ocrRezultat = ''; ocrCapturaPreview = null"
                 class="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold uppercase"
               >
                 Reîncearcă
@@ -5795,6 +5803,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           scannerActiv: false,
           ocrProcesand: false,
           ocrRezultat: "",
+          ocrCapturaPreview: null,
           html5Qrcode: null,
           scanSourceField: "",
 
@@ -9196,6 +9205,7 @@ rezolvaPozaUrl(record, filename) {
           },
           opresteScanner() {
             this.ocrRezultat = "";
+            this.ocrCapturaPreview = null;
             this.ocrProcesand = false;
             if (this.html5Qrcode) {
               this.html5Qrcode
@@ -9230,6 +9240,7 @@ rezolvaPozaUrl(record, filename) {
             }
             this.ocrProcesand = true;
             this.ocrRezultat = "";
+            this.ocrCapturaPreview = null;
             let worker = null;
             try {
               const containerRect = container.getBoundingClientRect();
@@ -9261,6 +9272,10 @@ rezolvaPozaUrl(record, filename) {
               canvas.height = Math.max(Math.round(srcH * 3), 60);
               const ctx = canvas.getContext("2d");
               ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
+              // "Îngheață" instantaneu cadrul chiar în momentul apăsării - utilizatorul vede
+              // imediat poza făcută și poate mișca telefonul din acel moment, fără să mai
+              // trebuiască să țină cadrul nemișcat pe durata procesării OCR (care mai durează).
+              this.ocrCapturaPreview = canvas.toDataURL("image/jpeg", 0.85);
               const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
               const d = imgData.data;
               // Prag adaptiv (Otsu) în loc de un prag fix (140) - un prag fix scoate
