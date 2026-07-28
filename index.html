@@ -431,6 +431,871 @@
             </div>
           </div>
 
+          <!-- ================================================================ -->
+    <!-- ================= ASISTENT AI (chat ERP) ===================== -->
+    <!-- Buton flotant + panou de chat. Complet independent de erpSystem() -
+         are propria instanță PocketBase (același server, aceeași sesiune,
+         fiindcă SDK-ul PocketBase salvează automat autentificarea în
+         localStorage și orice instanță nouă o citește de acolo). Nu
+         modifică nimic din restul aplicației. ================= -->
+    <div
+      x-data="aiAssistant()"
+      x-init="init()"
+      @keydown.escape.window="panelOpen && !minimized ? (panelOpen=false) : null"
+    >
+      <!-- Buton flotant (mic, discret, nu ocupă spațiu) -->
+      <button
+        x-show="!panelOpen"
+        x-cloak
+        @click="deschide()"
+        class="fixed bottom-24 right-4 z-[60] w-12 h-12 rounded-full text-white shadow-lg flex items-center justify-center active:scale-90 transition-transform bg-gradient-to-br from-rose-400 via-pink-500 to-teal-400"
+        style="box-shadow: 0 8px 20px -6px rgba(244,63,94,0.5)"
+        title="Asistent AI"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+          <path d="M12 2a2 2 0 0 1 2 2v1h1a3 3 0 0 1 3 3v3a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V8a3 3 0 0 1 3-3h1V4a2 2 0 0 1 2-2Z"/>
+          <circle cx="9" cy="10.5" r="1"/>
+          <circle cx="15" cy="10.5" r="1"/>
+          <path d="M8 20v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span x-show="mesaje.filter(m=>m.role==='assistant').length>0 && !panelOpen && aInchisManual" class="hidden"></span>
+      </button>
+
+      <!-- Bară minimizată -->
+      <button
+        x-show="panelOpen && minimized"
+        x-cloak
+        @click="minimized=false"
+        class="fixed bottom-24 right-4 z-[60] pl-3 pr-4 h-11 rounded-full bg-white/90 backdrop-blur-xl border border-slate-200 shadow-lg flex items-center gap-2 active:scale-95 transition-transform"
+      >
+        <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+        <span class="text-xs font-semibold text-slate-600">Asistent AI</span>
+        <span x-show="seGandeste" class="text-[10px] text-slate-400">se gândește…</span>
+      </button>
+
+      <!-- Panou complet -->
+      <div
+        x-show="panelOpen && !minimized"
+        x-cloak
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-3"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        class="fixed inset-0 md:inset-auto md:bottom-4 md:right-4 z-[60] w-full h-full md:w-[400px] md:h-[640px] md:rounded-3xl overflow-hidden flex flex-col bg-white/95 md:border md:border-slate-200 shadow-2xl"
+      >
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-white/90 backdrop-blur">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-teal-400 flex items-center justify-center text-white">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M12 2a2 2 0 0 1 2 2v1h1a3 3 0 0 1 3 3v3a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V8a3 3 0 0 1 3-3h1V4a2 2 0 0 1 2-2Z"/></svg>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-700 leading-none">Asistent AI</p>
+              <p class="text-[9px] text-slate-400 font-mono mt-0.5" x-text="ollamaUrl ? 'conectat: ' + ollamaModel : 'neconfigurat'"></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button @click="setariDeschise=!setariDeschise" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100" title="Setări">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+            </button>
+            <button @click="minimized=true" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100" title="Minimizează">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M5 12h14"/></svg>
+            </button>
+            <button @click="panelOpen=false" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500" title="Închide">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Setări (Ollama URL + model) -->
+        <div x-show="setariDeschise" x-cloak class="px-4 py-3 border-b border-slate-100 bg-slate-50/70 space-y-2">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Conexiune model local (Ollama)</p>
+          <input
+            type="text"
+            x-model="ollamaUrl"
+            @change="salveazaSetari()"
+            placeholder="https://desktop-XXXX.taildb497b.ts.net:8443"
+            class="w-full text-xs glass-input rounded-lg px-2.5 py-2"
+          />
+          <input
+            type="text"
+            x-model="ollamaModel"
+            @change="salveazaSetari()"
+            placeholder="qwen2.5:7b-instruct"
+            class="w-full text-xs glass-input rounded-lg px-2.5 py-2"
+          />
+          <p class="text-[9px] text-slate-400 leading-relaxed">
+            Adresa Tailscale a calculatorului pe care rulează <code>ollama serve</code>. Orice acțiune de scriere (vânzare, notiță) cere confirmarea ta înainte de a se executa.
+          </p>
+        </div>
+
+        <!-- Lista de mesaje -->
+        <div x-ref="listaMesaje" class="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 bg-gradient-to-b from-slate-50/50 to-white">
+          <template x-if="mesaje.length === 0">
+            <div class="text-center text-[11px] text-slate-400 mt-8 px-6 leading-relaxed">
+              Scrie o comandă. Folosește <span class="font-semibold text-rose-400">#</span> pentru produse și
+              <span class="font-semibold text-teal-500">@</span> pentru clienți.<br /><br />
+              Ex: <span class="italic">„@Ion Popescu #Laptop Dell 500 lei"</span>
+            </div>
+          </template>
+
+          <template x-for="(m, idx) in mesaje" :key="idx">
+            <div>
+              <!-- Mesaj text simplu (user sau assistant) -->
+              <template x-if="m.type === 'text'">
+                <div :class="m.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                  <div
+                    :class="m.role === 'user' ? 'bg-gradient-to-br from-rose-400 to-pink-500 text-white rounded-2xl rounded-br-md' : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-bl-md'"
+                    class="max-w-[85%] px-3 py-2 text-[12.5px] leading-relaxed whitespace-pre-wrap shadow-sm"
+                    x-text="m.text"
+                  ></div>
+                </div>
+              </template>
+
+              <!-- Card de confirmare pentru acțiuni de scriere -->
+              <template x-if="m.type === 'confirm'">
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 space-y-2">
+                  <p class="text-[10px] font-bold text-amber-600 uppercase tracking-wider" x-text="m.confirm.titlu"></p>
+                  <div class="text-[12px] text-slate-700 space-y-0.5" x-html="m.confirm.rezumatHtml"></div>
+                  <template x-if="m.confirm.stare === 'asteapta'">
+                    <div class="flex gap-2 pt-1">
+                      <button @click="confirmaAactiune(idx)" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white text-[11px] font-bold rounded-full py-1.5 transition">Confirmă</button>
+                      <button @click="anuleazaAactiune(idx)" class="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 text-[11px] font-bold rounded-full py-1.5 transition">Anulează</button>
+                    </div>
+                  </template>
+                  <template x-if="m.confirm.stare === 'confirmat'">
+                    <p class="text-[10px] font-bold text-teal-600">✓ Executat</p>
+                  </template>
+                  <template x-if="m.confirm.stare === 'anulat'">
+                    <p class="text-[10px] font-bold text-slate-400">Anulat</p>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <div x-show="seGandeste" x-cloak class="flex justify-start">
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-3 py-2 flex gap-1">
+              <span class="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+              <span class="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+              <span class="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Autocomplete #produse / @clienți -->
+        <div
+          x-show="autocomplete.activ && autocomplete.optiuni.length > 0"
+          x-cloak
+          class="mx-3 mb-1 max-h-36 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg divide-y divide-slate-50"
+        >
+          <template x-for="(op, i) in autocomplete.optiuni" :key="op.id">
+            <button
+              type="button"
+              @click="alegeAutocomplete(op)"
+              class="w-full text-left px-3 py-1.5 text-[11.5px] hover:bg-slate-50 flex justify-between items-center"
+            >
+              <span x-text="op.nume"></span>
+              <span
+                class="text-[9px] text-slate-400"
+                x-text="autocomplete.tip === 'produs' ? ('stoc: ' + op.stoc_actual) : (op.telefon || '')"
+              ></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Input -->
+        <div class="border-t border-slate-100 p-2.5 flex items-end gap-2 bg-white">
+          <textarea
+            x-ref="inputChat"
+            x-model="input"
+            @input="onInput()"
+            @keydown.enter.prevent="!$event.shiftKey && trimiteMesaj()"
+            rows="1"
+            placeholder="Scrie o comandă… #produs @client"
+            class="flex-1 resize-none glass-input rounded-2xl px-3 py-2 text-[12.5px] max-h-24"
+            style="min-height: 38px"
+          ></textarea>
+          <button
+            @click="trimiteMesaj()"
+            :disabled="seGandeste || !input.trim()"
+            class="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-rose-400 to-teal-400 text-white flex items-center justify-center disabled:opacity-40 active:scale-90 transition"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ================= ASISTENT AI - logică completă =================
+      function aiAssistant() {
+        const PB_URL = "https://desktop-m3811cb.taildb497b.ts.net";
+        return {
+          panelOpen: false,
+          minimized: false,
+          setariDeschise: false,
+          seGandeste: false,
+          aInchisManual: false,
+          input: "",
+          mesaje: [],
+          pb: null,
+          dateIncarcate: false,
+          produse: [],
+          clienti: [],
+          conturi: [],
+          ollamaUrl: "",
+          ollamaModel: "qwen2.5:7b-instruct",
+          autocomplete: { activ: false, tip: null, start: -1, optiuni: [] },
+          istoricConversatie: [], // format OpenAI: [{role, content, tool_calls?, tool_call_id?, name?}]
+
+          init() {
+            this.pb = new PocketBase(PB_URL);
+            this.ollamaUrl = localStorage.getItem("ai_ollama_url") || "";
+            this.ollamaModel =
+              localStorage.getItem("ai_ollama_model") || "qwen2.5:7b-instruct";
+            if (!this.ollamaUrl) this.setariDeschise = true;
+          },
+
+          salveazaSetari() {
+            localStorage.setItem("ai_ollama_url", this.ollamaUrl || "");
+            localStorage.setItem("ai_ollama_model", this.ollamaModel || "");
+          },
+
+          async deschide() {
+            this.panelOpen = true;
+            this.minimized = false;
+            this.aInchisManual = false;
+            if (!this.dateIncarcate) await this.incarcaDateBaza();
+            this.$nextTick(() => this.$refs.inputChat && this.$refs.inputChat.focus());
+          },
+
+          async incarcaDateBaza() {
+            try {
+              const [prod, cli, cont] = await Promise.all([
+                this.pb
+                  .collection("base_product")
+                  .getFullList({ fields: "id,denumire_produs,cod_site,stoc_actual,pret_cost_mediu", sort: "denumire_produs" }),
+                this.pb
+                  .collection("clienti")
+                  .getFullList({ fields: "id,nume,telefon,email,adresa", sort: "nume" })
+                  .catch(() => []),
+                this.pb
+                  .collection("base_account")
+                  .getFullList()
+                  .catch(() => []),
+              ]);
+              this.produse = prod.map((p) => ({
+                id: p.id,
+                nume: p.denumire_produs,
+                cod_site: p.cod_site || "",
+                stoc_actual: p.stoc_actual || 0,
+                pret_cost_mediu: p.pret_cost_mediu || 0,
+              }));
+              this.clienti = cli.map((c) => ({
+                id: c.id,
+                nume: c.nume,
+                telefon: c.telefon || "",
+                email: c.email || "",
+                adresa: c.adresa || "",
+              }));
+              this.conturi = cont;
+              this.dateIncarcate = true;
+            } catch (e) {
+              console.warn("Asistent AI: nu s-au putut încărca datele de bază:", e);
+            }
+          },
+
+          // ---------- Autocomplete # / @ ----------
+          onInput() {
+            const val = this.input;
+            const caret = this.$refs.inputChat.selectionStart;
+            const inainteDeCaret = val.slice(0, caret);
+            const match = inainteDeCaret.match(/(^|\s)([#@])([^\s#@]*)$/);
+            if (!match) {
+              this.autocomplete.activ = false;
+              return;
+            }
+            const simbol = match[2];
+            const query = match[3].toLowerCase();
+            this.autocomplete.start = caret - match[3].length - 1;
+            this.autocomplete.tip = simbol === "#" ? "produs" : "client";
+            const sursa = simbol === "#" ? this.produse : this.clienti;
+            this.autocomplete.optiuni = sursa
+              .filter((x) => x.nume.toLowerCase().includes(query))
+              .slice(0, 6);
+            this.autocomplete.activ = true;
+          },
+
+          alegeAutocomplete(op) {
+            const simbol = this.autocomplete.tip === "produs" ? "#" : "@";
+            const inainte = this.input.slice(0, this.autocomplete.start);
+            const dupaCaret = this.input.slice(this.$refs.inputChat.selectionStart);
+            this.input = `${inainte}${simbol}${op.nume} ${dupaCaret}`;
+            this.autocomplete.activ = false;
+            this.$nextTick(() => this.$refs.inputChat.focus());
+          },
+
+          // Găsește tag-urile #... și @... din text și le leagă de ID-uri reale,
+          // construind un context "adevărat" pe care îl trimitem modelului -
+          // astfel modelul nu ghicește nume, ci primește ID-uri exacte.
+          rezolvaTaguri(text) {
+            const noteContext = [];
+            const regexProdus = /#([^\s#@]+(?:\s[^\s#@]+)?)/g;
+            const regexClient = /@([^\s#@]+(?:\s[^\s#@]+)?)/g;
+            let m;
+            while ((m = regexProdus.exec(text))) {
+              const nume = m[1].trim().toLowerCase();
+              const gasit = this.produse.find((p) => p.nume.toLowerCase().includes(nume)) ||
+                this.produse.find((p) => nume.includes(p.nume.toLowerCase()));
+              if (gasit) {
+                noteContext.push(
+                  `#${gasit.nume} → id_produs="${gasit.id}", stoc_actual=${gasit.stoc_actual}, pret_cost_mediu=${gasit.pret_cost_mediu}`,
+                );
+              }
+            }
+            while ((m = regexClient.exec(text))) {
+              const nume = m[1].trim().toLowerCase();
+              const gasit = this.clienti.find((c) => c.nume.toLowerCase().includes(nume)) ||
+                this.clienti.find((c) => nume.includes(c.nume.toLowerCase()));
+              if (gasit) {
+                noteContext.push(`@${gasit.nume} → id_client="${gasit.id}"`);
+              }
+            }
+            return noteContext.join("\n");
+          },
+
+          scapaHtml(s) {
+            const d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+          },
+
+          scrollJos() {
+            this.$nextTick(() => {
+              const el = this.$refs.listaMesaje;
+              if (el) el.scrollTop = el.scrollHeight;
+            });
+          },
+
+          // ---------- Trimitere mesaj + buclă de tool-calling ----------
+          async trimiteMesaj() {
+            const text = this.input.trim();
+            if (!text || this.seGandeste) return;
+            if (!this.ollamaUrl) {
+              this.setariDeschise = true;
+              this.mesaje.push({
+                type: "text",
+                role: "assistant",
+                text: "Configurează mai întâi adresa modelului local (buton ⚙️ sus).",
+              });
+              return;
+            }
+            this.mesaje.push({ type: "text", role: "user", text });
+            this.input = "";
+            this.autocomplete.activ = false;
+            this.scrollJos();
+
+            const contextTaguri = this.rezolvaTaguri(text);
+            const mesajUtilizator = contextTaguri
+              ? `${text}\n\n[Context date reale rezolvate din taguri:\n${contextTaguri}]`
+              : text;
+
+            if (this.istoricConversatie.length === 0) {
+              this.istoricConversatie.push({ role: "system", content: this.promptSistem() });
+            }
+            this.istoricConversatie.push({ role: "user", content: mesajUtilizator });
+
+            this.seGandeste = true;
+            try {
+              await this.rulaazaBuclaModel();
+            } catch (e) {
+              this.mesaje.push({
+                type: "text",
+                role: "assistant",
+                text: "Eroare la conectarea cu modelul: " + e.message,
+              });
+            } finally {
+              this.seGandeste = false;
+              this.scrollJos();
+            }
+          },
+
+          promptSistem() {
+            return `Ești asistentul AI al aplicației Priority ERP (gestiune stoc, vânzări, clienți) a unui magazin mic.
+Data curentă: ${new Date().toLocaleDateString("ro-RO")}.
+Vorbești română, scurt și concret, ca un coleg eficient.
+Ai la dispoziție funcții (tools) pentru a citi date reale - folosește-le mereu în loc să presupui prețuri, stocuri sau istoricul clienților.
+Când utilizatorul cere o vânzare rapidă (ex: "@Ion #Laptop 500 lei"), primești deja în mesaj un context cu id_produs/id_client rezolvate - folosește acele ID-uri exacte când apelezi creeaza_vanzare.
+Funcțiile care scriu date (creeaza_vanzare, creeaza_nota) NU se execută niciodată direct - interfața îi va cere mereu confirmarea utilizatorului. Tu doar apelezi funcția o singură dată cu datele corecte; rezultatul funcției va spune dacă utilizatorul a confirmat sau a anulat.
+Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu știi prețul de vânzare cerut de utilizator), întreabă înainte de a apela funcția de vânzare.`;
+          },
+
+          definitiiTools() {
+            return [
+              {
+                type: "function",
+                function: {
+                  name: "cauta_produse",
+                  description: "Caută produse din catalog după nume sau cod. Returnează stoc și cost mediu.",
+                  parameters: {
+                    type: "object",
+                    properties: { query: { type: "string", description: "text de căutare" } },
+                    required: ["query"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "rezumat_stoc",
+                  description: "Rezumat general al stocului: valoare totală, produse fără stoc, produse cu stoc redus.",
+                  parameters: { type: "object", properties: {} },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "cauta_clienti",
+                  description: "Caută clienți după nume sau telefon.",
+                  parameters: {
+                    type: "object",
+                    properties: { query: { type: "string" } },
+                    required: ["query"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "istoric_client",
+                  description: "Ultimele vânzări către un client (după id_client sau nume).",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      id_client: { type: "string" },
+                      nume: { type: "string" },
+                    },
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "raport_vanzari",
+                  description: "Totaluri de vânzări, achiziții și profit pentru o perioadă.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      perioada: {
+                        type: "string",
+                        enum: ["azi", "saptamana", "luna", "an", "tot"],
+                      },
+                    },
+                    required: ["perioada"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "top_produse",
+                  description: "Cele mai vândute sau cele mai profitabile produse.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      criteriu: { type: "string", enum: ["cantitate", "profit"] },
+                      limita: { type: "number" },
+                    },
+                    required: ["criteriu"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "creeaza_vanzare",
+                  description:
+                    "Înregistrează o vânzare rapidă. Necesită confirmarea utilizatorului înainte de execuție.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      id_client: { type: "string", description: "id-ul clientului (opțional dacă e anonim)" },
+                      nume_client: { type: "string" },
+                      produse: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id_produs: { type: "string" },
+                            nume_produs: { type: "string" },
+                            cantitate: { type: "number" },
+                            pret_vanzare: { type: "number" },
+                          },
+                          required: ["id_produs", "cantitate", "pret_vanzare"],
+                        },
+                      },
+                      status_plata: { type: "string", enum: ["platit", "creanta"] },
+                    },
+                    required: ["produse", "status_plata"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "creeaza_nota",
+                  description: "Creează o notiță pe dashboard. Necesită confirmarea utilizatorului.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      titlu: { type: "string" },
+                      continut: { type: "string" },
+                    },
+                    required: ["continut"],
+                  },
+                },
+              },
+            ];
+          },
+
+          async apelOllama() {
+            const res = await fetch(this.ollamaUrl.replace(/\/$/, "") + "/v1/chat/completions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: this.ollamaModel,
+                messages: this.istoricConversatie,
+                tools: this.definitiiTools(),
+                tool_choice: "auto",
+                stream: false,
+              }),
+            });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          },
+
+          async rulaazaBuclaModel() {
+            for (let iteratie = 0; iteratie < 6; iteratie++) {
+              const data = await this.apelOllama();
+              const mesaj = data.choices && data.choices[0] && data.choices[0].message;
+              if (!mesaj) throw new Error("Răspuns invalid de la model.");
+
+              if (mesaj.tool_calls && mesaj.tool_calls.length > 0) {
+                this.istoricConversatie.push({
+                  role: "assistant",
+                  content: mesaj.content || "",
+                  tool_calls: mesaj.tool_calls,
+                });
+
+                for (const tc of mesaj.tool_calls) {
+                  const nume = tc.function.name;
+                  let args = {};
+                  try {
+                    args = JSON.parse(tc.function.arguments || "{}");
+                  } catch (e) {}
+
+                  if (nume === "creeaza_vanzare" || nume === "creeaza_nota") {
+                    // Acțiune de scriere: oprim bucla, arătăm cardul de confirmare
+                    // și așteptăm click-ul utilizatorului (vezi confirmaAactiune()).
+                    const idxMesaj = this.adaugaCardConfirmare(nume, args);
+                    this.confirmarePendinte = {
+                      idxMesaj,
+                      toolCallId: tc.id,
+                      nume,
+                      args,
+                    };
+                    return; // ieșim din buclă; se reia din confirmaAactiune()
+                  }
+
+                  const rezultat = await this.executaToolCitire(nume, args);
+                  this.istoricConversatie.push({
+                    role: "tool",
+                    tool_call_id: tc.id,
+                    name: nume,
+                    content: JSON.stringify(rezultat),
+                  });
+                }
+                continue; // trimitem din nou modelului, cu rezultatele tool-urilor
+              }
+
+              // Răspuns final, text simplu
+              const textFinal = (mesaj.content || "").trim();
+              if (textFinal) {
+                this.istoricConversatie.push({ role: "assistant", content: textFinal });
+                this.mesaje.push({ type: "text", role: "assistant", text: textFinal });
+              }
+              return;
+            }
+          },
+
+          // ---------- Tools de citire (se execută automat, fără confirmare) ----------
+          async executaToolCitire(nume, args) {
+            try {
+              switch (nume) {
+                case "cauta_produse":
+                  return this.produse
+                    .filter((p) => p.nume.toLowerCase().includes((args.query || "").toLowerCase()))
+                    .slice(0, 10);
+
+                case "rezumat_stoc": {
+                  const faraStoc = this.produse.filter((p) => p.stoc_actual <= 0);
+                  const stocRedus = this.produse
+                    .filter((p) => p.stoc_actual > 0 && p.stoc_actual < 5)
+                    .sort((a, b) => a.stoc_actual - b.stoc_actual)
+                    .slice(0, 10);
+                  const valoareTotala = this.produse.reduce(
+                    (s, p) => s + p.stoc_actual * p.pret_cost_mediu,
+                    0,
+                  );
+                  return {
+                    total_produse: this.produse.length,
+                    valoare_stoc_cost: Math.round(valoareTotala),
+                    produse_fara_stoc: faraStoc.map((p) => p.nume),
+                    produse_stoc_redus: stocRedus.map((p) => `${p.nume} (${p.stoc_actual})`),
+                  };
+                }
+
+                case "cauta_clienti":
+                  return this.clienti
+                    .filter(
+                      (c) =>
+                        c.nume.toLowerCase().includes((args.query || "").toLowerCase()) ||
+                        (c.telefon || "").includes(args.query || ""),
+                    )
+                    .slice(0, 10);
+
+                case "istoric_client": {
+                  const vanzari = await this.pb.collection("flow_sale").getFullList({
+                    filter: args.nume ? `client_nume ~ "${args.nume}"` : "",
+                    sort: "-data_vanzare",
+                  });
+                  const limitat = vanzari.slice(0, 8);
+                  const itemi = await Promise.all(
+                    limitat.map((v) =>
+                      this.pb
+                        .collection("flow_sale_item")
+                        .getFullList({ filter: `id_vanzare = "${v.id}"` })
+                        .catch(() => []),
+                    ),
+                  );
+                  return limitat.map((v, i) => ({
+                    data: v.data_vanzare,
+                    status_plata: v.status_plata,
+                    produse: itemi[i].map((it) => `${it.cantitate_vanduta} x id:${it.id_produs} @ ${it.pret_vanzare_real} lei`),
+                  }));
+                }
+
+                case "raport_vanzari": {
+                  const cutoff = this.calculeazaCutoff(args.perioada);
+                  const vanzari = await this.pb.collection("flow_sale").getFullList({
+                    filter: cutoff ? `data_vanzare >= "${cutoff}"` : "",
+                  });
+                  const idSet = new Set(vanzari.map((v) => v.id));
+                  const toateItemi = await this.pb.collection("flow_sale_item").getFullList();
+                  let totalVanzari = 0,
+                    totalProfit = 0,
+                    nrVanzari = vanzari.length;
+                  toateItemi.forEach((it) => {
+                    if (idSet.has(it.id_vanzare)) {
+                      totalVanzari += (it.pret_vanzare_real || 0) * (it.cantitate_vanduta || 0);
+                      totalProfit +=
+                        ((it.pret_vanzare_real || 0) - (it.cost_snapshot_unitat || 0)) *
+                        (it.cantitate_vanduta || 0);
+                    }
+                  });
+                  return {
+                    perioada: args.perioada,
+                    numar_vanzari: nrVanzari,
+                    total_incasat: Math.round(totalVanzari),
+                    profit_estimat: Math.round(totalProfit),
+                  };
+                }
+
+                case "top_produse": {
+                  const toateItemi = await this.pb.collection("flow_sale_item").getFullList();
+                  const agregat = {};
+                  toateItemi.forEach((it) => {
+                    if (!agregat[it.id_produs]) agregat[it.id_produs] = { cantitate: 0, profit: 0 };
+                    agregat[it.id_produs].cantitate += it.cantitate_vanduta || 0;
+                    agregat[it.id_produs].profit +=
+                      ((it.pret_vanzare_real || 0) - (it.cost_snapshot_unitat || 0)) *
+                      (it.cantitate_vanduta || 0);
+                  });
+                  const criteriu = args.criteriu === "profit" ? "profit" : "cantitate";
+                  const limita = args.limita || 5;
+                  return Object.entries(agregat)
+                    .map(([id, v]) => {
+                      const p = this.produse.find((x) => x.id === id);
+                      return { produs: p ? p.nume : id, cantitate: v.cantitate, profit: Math.round(v.profit) };
+                    })
+                    .sort((a, b) => b[criteriu] - a[criteriu])
+                    .slice(0, limita);
+                }
+
+                default:
+                  return { eroare: "Funcție necunoscută: " + nume };
+              }
+            } catch (e) {
+              return { eroare: e.message };
+            }
+          },
+
+          calculeazaCutoff(perioada) {
+            const acum = new Date();
+            const d = new Date(acum);
+            if (perioada === "azi") d.setHours(0, 0, 0, 0);
+            else if (perioada === "saptamana") d.setDate(d.getDate() - 7);
+            else if (perioada === "luna") d.setMonth(d.getMonth() - 1);
+            else if (perioada === "an") d.setFullYear(d.getFullYear() - 1);
+            else return null;
+            return d.toISOString();
+          },
+
+          // ---------- Carduri de confirmare pentru scriere ----------
+          adaugaCardConfirmare(nume, args) {
+            let titlu = "";
+            let rezumatHtml = "";
+            if (nume === "creeaza_vanzare") {
+              titlu = "Confirmă vânzarea";
+              const client = args.nume_client || (this.clienti.find((c) => c.id === args.id_client) || {}).nume || "Anonim";
+              const linii = (args.produse || []).map((p) => {
+                const prod = this.produse.find((x) => x.id === p.id_produs);
+                const nume2 = p.nume_produs || (prod ? prod.nume : p.id_produs);
+                return `${this.scapaHtml(nume2)} × ${p.cantitate || 1} = ${(p.pret_vanzare * (p.cantitate || 1)).toFixed(0)} lei`;
+              });
+              const total = (args.produse || []).reduce((s, p) => s + p.pret_vanzare * (p.cantitate || 1), 0);
+              rezumatHtml =
+                `Client: <b>${this.scapaHtml(client)}</b><br>` +
+                linii.map((l) => `• ${l}`).join("<br>") +
+                `<br>Total: <b>${total.toFixed(0)} lei</b> (${args.status_plata === "platit" ? "plătit" : "pe datorie"})`;
+            } else if (nume === "creeaza_nota") {
+              titlu = "Confirmă notița";
+              rezumatHtml =
+                (args.titlu ? `<b>${this.scapaHtml(args.titlu)}</b><br>` : "") + this.scapaHtml(args.continut || "");
+            }
+            const idx =
+              this.mesaje.push({
+                type: "confirm",
+                confirm: { titlu, rezumatHtml, stare: "asteapta", nume, args },
+              }) - 1;
+            this.scrollJos();
+            return idx;
+          },
+
+          async confirmaAactiune(idx) {
+            const card = this.mesaje[idx];
+            if (!card || card.confirm.stare !== "asteapta") return;
+            this.seGandeste = true;
+            try {
+              let rezultatTool;
+              if (card.confirm.nume === "creeaza_vanzare") {
+                rezultatTool = await this.executaVanzare(card.confirm.args);
+              } else if (card.confirm.nume === "creeaza_nota") {
+                rezultatTool = await this.executaNota(card.confirm.args);
+              }
+              card.confirm.stare = "confirmat";
+
+              this.istoricConversatie.push({
+                role: "tool",
+                tool_call_id: this.confirmarePendinte.toolCallId,
+                name: this.confirmarePendinte.nume,
+                content: JSON.stringify(rezultatTool),
+              });
+              this.confirmarePendinte = null;
+              await this.rulaazaBuclaModel();
+            } catch (e) {
+              this.mesaje.push({ type: "text", role: "assistant", text: "Eroare: " + e.message });
+            } finally {
+              this.seGandeste = false;
+              this.scrollJos();
+            }
+          },
+
+          async anuleazaAactiune(idx) {
+            const card = this.mesaje[idx];
+            if (!card || card.confirm.stare !== "asteapta") return;
+            card.confirm.stare = "anulat";
+            if (this.confirmarePendinte) {
+              this.istoricConversatie.push({
+                role: "tool",
+                tool_call_id: this.confirmarePendinte.toolCallId,
+                name: this.confirmarePendinte.nume,
+                content: JSON.stringify({ rezultat: "Anulat de utilizator." }),
+              });
+              this.confirmarePendinte = null;
+              this.seGandeste = true;
+              try {
+                await this.rulaazaBuclaModel();
+              } finally {
+                this.seGandeste = false;
+              }
+            }
+          },
+
+          // Reutilizează exact logica din salveazaVanzare() a aplicației principale
+          // (scade stocul, calculează CMP, creează flow_sale + flow_sale_item + ledger_finance).
+          async executaVanzare(args) {
+            const produseValide = (args.produse || []).filter((p) => p.id_produs && p.pret_vanzare != null);
+            if (produseValide.length === 0) throw new Error("Nu există produse valide de vândut.");
+
+            const contOperativ =
+              this.conturi.find((c) => c.tip_cont === "operativ") || this.conturi[0] || null;
+
+            const vInreg = await this.pb.collection("flow_sale").create({
+              client_nume: args.nume_client || "Anonim",
+              status_plata: args.status_plata || "creanta",
+              id_cont_incasare:
+                args.status_plata === "platit" && contOperativ ? contOperativ.id : null,
+              data_vanzare: new Date().toISOString(),
+              descriere: "Creat de Asistent AI",
+            });
+
+            let total = 0;
+            for (const p of produseValide) {
+              const cantitate = p.cantitate || 1;
+              const prodActual = await this.pb.collection("base_product").getOne(p.id_produs);
+              const stocNou = Math.max(0, (prodActual.stoc_actual || 0) - cantitate);
+              await this.pb.collection("base_product").update(p.id_produs, { stoc_actual: stocNou });
+              await this.pb.collection("flow_sale_item").create({
+                id_vanzare: vInreg.id,
+                id_produs: p.id_produs,
+                cantitate_vanduta: cantitate,
+                pret_vanzare_real: p.pret_vanzare,
+                cost_snapshot_unitat: prodActual.pret_cost_mediu || 0,
+              });
+              total += p.pret_vanzare * cantitate;
+              const local = this.produse.find((x) => x.id === p.id_produs);
+              if (local) local.stoc_actual = stocNou;
+            }
+
+            if (args.status_plata === "platit" && contOperativ) {
+              await this.pb.collection("ledger_finance").create({
+                id_cont: contOperativ.id,
+                suma: total,
+                tip_tranzactie: "vanzare",
+                descriere: `Vânzare (Asistent AI) către ${args.nume_client || "Anonim"} [REF:${vInreg.id}]`,
+                data_tranzactie: new Date().toISOString(),
+              });
+            }
+            return { rezultat: "Vânzare înregistrată cu succes.", id_vanzare: vInreg.id, total };
+          },
+
+          async executaNota(args) {
+            const nota = await this.pb.collection("app_note").create({
+              titlu: args.titlu || "",
+              tip: "text",
+              continut: args.continut || "",
+              itemi: [],
+              link: "",
+              culoare: "slate",
+              fixata: false,
+            });
+            return { rezultat: "Notiță creată.", id_nota: nota.id };
+          },
+        };
+      }
+    </script>
+    
           <!-- NOTIȚE FIXATE PE DASHBOARD (deasupra statisticilor) -->
           <div x-show="noteFixate().length > 0" x-cloak class="space-y-3 pt-4">
             <div class="grid grid-cols-2 gap-3">
@@ -8396,9 +9261,40 @@ rezolvaPozaUrl(record, filename) {
               ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
               const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
               const d = imgData.data;
-              for (let i = 0; i < d.length; i += 4) {
-                const gri = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                const alb = gri < 140 ? 0 : 255;
+              // Prag adaptiv (Otsu) în loc de un prag fix (140) - un prag fix scoate
+              // imaginea complet neagră sau complet albă în funcție de lumina din cadru,
+              // iar Tesseract "citește" zgomot din binarizarea greșită.
+              const histograma = new Array(256).fill(0);
+              const griPerPixel = new Uint8ClampedArray(d.length / 4);
+              for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                const gri = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+                griPerPixel[p] = gri;
+                histograma[gri]++;
+              }
+              const totalPixeli = griPerPixel.length;
+              let sumaTotala = 0;
+              for (let t = 0; t < 256; t++) sumaTotala += t * histograma[t];
+              let sumaFundal = 0,
+                greutateFundal = 0,
+                varMax = 0,
+                pragOtsu = 140; // fallback dacă histograma e degenerată
+              for (let t = 0; t < 256; t++) {
+                greutateFundal += histograma[t];
+                if (greutateFundal === 0) continue;
+                const greutatePlan = totalPixeli - greutateFundal;
+                if (greutatePlan === 0) break;
+                sumaFundal += t * histograma[t];
+                const mediaFundal = sumaFundal / greutateFundal;
+                const mediaPlan = (sumaTotala - sumaFundal) / greutatePlan;
+                const varIntre =
+                  greutateFundal * greutatePlan * (mediaFundal - mediaPlan) ** 2;
+                if (varIntre > varMax) {
+                  varMax = varIntre;
+                  pragOtsu = t;
+                }
+              }
+              for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                const alb = griPerPixel[p] < pragOtsu ? 0 : 255;
                 d[i] = d[i + 1] = d[i + 2] = alb;
               }
               ctx.putImageData(imgData, 0, 0);
@@ -8406,9 +9302,23 @@ rezolvaPozaUrl(record, filename) {
               worker = await Tesseract.createWorker("eng");
               await worker.setParameters({
                 tessedit_char_whitelist: "0123456789",
+                // Tratează cadrul ca UN SINGUR rând de text, nu ca o pagină întreagă -
+                // fără asta Tesseract încerca să segmenteze imaginea în coloane/blocuri
+                // și pe o poză mică, zgomotoasă, "inventa" cifre complet diferite.
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
               });
-              const { data } = await worker.recognize(canvas);
-              const doarCifre = (data.text || "").replace(/[^0-9]/g, "").trim();
+              let { data } = await worker.recognize(canvas);
+              let doarCifre = (data.text || "").replace(/[^0-9]/g, "").trim();
+              // Dacă modul "un singur rând" nu a găsit nimic (posibil codul e pe mai multe
+              // rânduri sau nu ocupă tot cadrul pe orizontală), încearcă o a doua trecere
+              // cu modul "un singur bloc" înainte să declarăm eșec.
+              if (!doarCifre) {
+                await worker.setParameters({
+                  tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+                });
+                const a2 = await worker.recognize(canvas);
+                doarCifre = (a2.data.text || "").replace(/[^0-9]/g, "").trim();
+              }
               if (!doarCifre) {
                 alert(
                   "Nu am putut citi cifre clare în cadru. Apropie codul, ține telefonul drept și mai încearcă.",
