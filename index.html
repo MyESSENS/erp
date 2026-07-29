@@ -33,6 +33,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- Tesseract.js pentru citirea codurilor scrise (OCR), folosit la "Captează text" din scanner -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- marked + DOMPurify: pentru a stiliza (Markdown -> HTML, în siguranță) răspunsurile text ale asistentului AI -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 
     <style>
       [x-cloak] {
@@ -119,6 +122,98 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: rgba(0, 0, 0, 0.2);
+      }
+
+      /* Stilizare Markdown pentru răspunsurile text ale asistentului AI (gen Gemini) */
+      .md-content {
+        font-size: 12.5px;
+        line-height: 1.55;
+      }
+      .md-content > *:first-child { margin-top: 0; }
+      .md-content > *:last-child { margin-bottom: 0; }
+      .md-content p { margin: 0.45em 0; }
+      .md-content h1,
+      .md-content h2,
+      .md-content h3,
+      .md-content h4 {
+        font-weight: 700;
+        color: #334155; /* slate-700 */
+        margin: 0.7em 0 0.35em;
+        line-height: 1.3;
+      }
+      .md-content h1 { font-size: 15px; }
+      .md-content h2 { font-size: 14px; }
+      .md-content h3 { font-size: 13px; }
+      .md-content h4 { font-size: 12.5px; }
+      .md-content strong { font-weight: 700; color: #1e293b; }
+      .md-content em { font-style: italic; }
+      .md-content ul,
+      .md-content ol {
+        margin: 0.35em 0 0.35em 1.1em;
+        padding: 0;
+      }
+      .md-content ul { list-style: disc; }
+      .md-content ol { list-style: decimal; }
+      .md-content li { margin: 0.2em 0; }
+      .md-content li > p { margin: 0; }
+      .md-content hr {
+        border: none;
+        border-top: 1px solid rgba(148, 163, 184, 0.3);
+        margin: 0.6em 0;
+      }
+      .md-content code {
+        background: rgba(148, 163, 184, 0.15);
+        border-radius: 4px;
+        padding: 0.1em 0.35em;
+        font-size: 11px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      .md-content pre {
+        background: rgba(30, 41, 59, 0.92);
+        color: #e2e8f0;
+        border-radius: 10px;
+        padding: 0.6em 0.8em;
+        overflow-x: auto;
+        margin: 0.5em 0;
+      }
+      .md-content pre code {
+        background: transparent;
+        padding: 0;
+        color: inherit;
+      }
+      .md-content a {
+        color: #f43f5e;
+        text-decoration: underline;
+      }
+      .md-content blockquote {
+        border-left: 3px solid rgba(253, 164, 175, 0.6);
+        margin: 0.4em 0;
+        padding-left: 0.7em;
+        color: #64748b;
+      }
+      .md-content table {
+        border-collapse: collapse;
+        margin: 0.5em 0;
+        font-size: 11.5px;
+      }
+      .md-content th,
+      .md-content td {
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: 0.25em 0.5em;
+        text-align: left;
+      }
+      /* Cursor clipitor cât timp textul apare treptat */
+      .md-typing-cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: #fda4af;
+        margin-left: 1px;
+        vertical-align: text-bottom;
+        animation: md-cursor-blink 0.9s steps(1) infinite;
+      }
+      @keyframes md-cursor-blink {
+        50% { opacity: 0; }
       }
     </style>
   </head>
@@ -492,7 +587,7 @@
             </div>
             <div>
               <p class="text-xs font-bold text-slate-700 leading-none">Asistent AI</p>
-              <p class="text-[9px] text-slate-400 font-mono mt-0.5" x-text="ollamaUrl ? 'conectat: ' + ollamaModel : 'neconfigurat'"></p>
+              <p class="text-[9px] text-slate-400 font-mono mt-0.5" x-text="groqApiKey ? 'conectat: ' + groqModel : 'neconfigurat'"></p>
             </div>
           </div>
           <div class="flex items-center gap-1">
@@ -508,25 +603,25 @@
           </div>
         </div>
 
-        <!-- Setări (Ollama URL + model) -->
+        <!-- Setări (cheie API Gemini + model) -->
         <div x-show="setariDeschise" x-cloak class="px-4 py-3 border-b border-slate-100 bg-slate-50/70 space-y-2">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Conexiune model local (Ollama)</p>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Conexiune model AI (Gemini, cloud)</p>
           <input
-            type="text"
-            x-model="ollamaUrl"
+            type="password"
+            x-model="groqApiKey"
             @change="salveazaSetari()"
-            placeholder="https://desktop-XXXX.taildb497b.ts.net:8443"
+            placeholder="Cheie API Gemini (AIza...)"
             class="w-full text-xs glass-input rounded-lg px-2.5 py-2"
           />
           <input
             type="text"
-            x-model="ollamaModel"
+            x-model="groqModel"
             @change="salveazaSetari()"
-            placeholder="qwen2.5:7b-instruct"
+            placeholder="gemini-3.6-flash"
             class="w-full text-xs glass-input rounded-lg px-2.5 py-2"
           />
           <p class="text-[9px] text-slate-400 leading-relaxed">
-            Adresa Tailscale a calculatorului pe care rulează <code>ollama serve</code>. Orice acțiune de scriere (vânzare, notiță) cere confirmarea ta înainte de a se executa.
+            Cheia se ia gratuit de pe <code>aistudio.google.com/apikey</code>. Orice acțiune de scriere (vânzare, notiță) cere confirmarea ta înainte de a se executa.
           </p>
         </div>
 
@@ -542,13 +637,22 @@
 
           <template x-for="(m, idx) in mesaje" :key="idx">
             <div>
-              <!-- Mesaj text simplu (user sau assistant) -->
-              <template x-if="m.type === 'text'">
-                <div :class="m.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+              <!-- Mesaj text simplu - utilizator (text brut) -->
+              <template x-if="m.type === 'text' && m.role === 'user'">
+                <div class="flex justify-end">
                   <div
-                    :class="m.role === 'user' ? 'bg-gradient-to-br from-rose-400 to-pink-500 text-white rounded-2xl rounded-br-md' : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-bl-md'"
-                    class="max-w-[85%] px-3 py-2 text-[12.5px] leading-relaxed whitespace-pre-wrap shadow-sm"
+                    class="bg-gradient-to-br from-rose-400 to-pink-500 text-white rounded-2xl rounded-br-md max-w-[85%] px-3 py-2 text-[12.5px] leading-relaxed whitespace-pre-wrap shadow-sm"
                     x-text="m.text"
+                  ></div>
+                </div>
+              </template>
+
+              <!-- Mesaj text - asistent (stilizat Markdown, cu apariție treptată) -->
+              <template x-if="m.type === 'text' && m.role === 'assistant'">
+                <div class="flex justify-start">
+                  <div
+                    class="bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-bl-md max-w-[85%] px-3 py-2 shadow-sm md-content"
+                    x-html="renderMarkdown(m.displayed !== undefined ? m.displayed : m.text) + (m.seScrie ? '<span class=\'md-typing-cursor\'></span>' : '')"
                   ></div>
                 </div>
               </template>
@@ -569,6 +673,76 @@
                   </template>
                   <template x-if="m.confirm.stare === 'anulat'">
                     <p class="text-[10px] font-bold text-slate-400">Anulat</p>
+                  </template>
+                </div>
+              </template>
+
+              <!-- Card vizual pentru rezultatele funcțiilor de citire (tabele, statistici, stoc) -->
+              <template x-if="m.type === 'card'">
+                <div class="glass-panel rounded-2xl p-3 space-y-2 max-w-[95%]">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <p class="text-[11px] font-bold text-slate-700" x-text="m.card.titlu"></p>
+                    <p x-show="m.card.subtitlu" class="text-[9px] text-slate-400 font-mono" x-text="m.card.subtitlu"></p>
+                  </div>
+
+                  <!-- Tip: tabel -->
+                  <template x-if="m.card.tip === 'tabel'">
+                    <div class="overflow-x-auto -mx-1">
+                      <table class="w-full text-[11px] border-collapse">
+                        <thead>
+                          <tr class="text-[9px] uppercase tracking-wider text-slate-400 border-b border-slate-200">
+                            <template x-for="col in m.card.coloane" :key="col">
+                              <th class="text-left font-semibold py-1 px-1.5 whitespace-nowrap" x-text="col"></th>
+                            </template>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <template x-for="(rand, ri) in m.card.randuri" :key="ri">
+                            <tr class="border-b border-slate-100 last:border-0 odd:bg-white/40">
+                              <template x-for="(cel, ci) in rand" :key="ci">
+                                <td class="py-1 px-1.5 text-slate-700 whitespace-nowrap" x-text="cel"></td>
+                              </template>
+                            </tr>
+                          </template>
+                        </tbody>
+                      </table>
+                    </div>
+                  </template>
+
+                  <!-- Tip: statistici (grid de indicatori) -->
+                  <template x-if="m.card.tip === 'statistici'">
+                    <div class="grid grid-cols-3 gap-2">
+                      <template x-for="(s, si) in m.card.statistici" :key="si">
+                        <div class="bg-white/70 border border-slate-200/70 rounded-xl px-2 py-2 text-center">
+                          <p class="text-[9px] text-slate-400 uppercase tracking-wide leading-tight" x-text="s.eticheta"></p>
+                          <p class="text-[12.5px] font-bold text-slate-700 mt-0.5" x-text="s.valoare"></p>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+
+                  <!-- Tip: stoc (rezumat general de stoc) -->
+                  <template x-if="m.card.tip === 'stoc'">
+                    <div class="space-y-2">
+                      <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-white/70 border border-slate-200/70 rounded-xl px-2 py-2 text-center">
+                          <p class="text-[9px] text-slate-400 uppercase tracking-wide">Valoare stoc</p>
+                          <p class="text-[12.5px] font-bold text-slate-700 mt-0.5" x-text="m.card.valoareStoc"></p>
+                        </div>
+                        <div class="bg-white/70 border border-slate-200/70 rounded-xl px-2 py-2 text-center">
+                          <p class="text-[9px] text-slate-400 uppercase tracking-wide">Produse în catalog</p>
+                          <p class="text-[12.5px] font-bold text-slate-700 mt-0.5" x-text="m.card.totalProduse"></p>
+                        </div>
+                      </div>
+                      <div x-show="m.card.faraStoc && m.card.faraStoc.length" class="bg-rose-50/70 border border-rose-200/70 rounded-xl px-2.5 py-2">
+                        <p class="text-[9px] font-bold text-rose-500 uppercase tracking-wide mb-1">Fără stoc</p>
+                        <p class="text-[11px] text-slate-600 leading-snug" x-text="(m.card.faraStoc || []).join(', ')"></p>
+                      </div>
+                      <div x-show="m.card.stocRedus && m.card.stocRedus.length" class="bg-amber-50/70 border border-amber-200/70 rounded-xl px-2.5 py-2">
+                        <p class="text-[9px] font-bold text-amber-600 uppercase tracking-wide mb-1">Stoc redus</p>
+                        <p class="text-[11px] text-slate-600 leading-snug" x-text="(m.card.stocRedus || []).join(', ')"></p>
+                      </div>
+                    </div>
                   </template>
                 </div>
               </template>
@@ -645,22 +819,22 @@
           produse: [],
           clienti: [],
           conturi: [],
-          ollamaUrl: "",
-          ollamaModel: "qwen2.5:7b-instruct",
+          groqApiKey: "",
+          groqModel: "gemini-3.6-flash",
           autocomplete: { activ: false, tip: null, start: -1, optiuni: [] },
           istoricConversatie: [], // format OpenAI: [{role, content, tool_calls?, tool_call_id?, name?}]
 
           init() {
             this.pb = new PocketBase(PB_URL);
-            this.ollamaUrl = localStorage.getItem("ai_ollama_url") || "";
-            this.ollamaModel =
-              localStorage.getItem("ai_ollama_model") || "qwen2.5:7b-instruct";
-            if (!this.ollamaUrl) this.setariDeschise = true;
+            this.groqApiKey = localStorage.getItem("ai_gemini_key") || "";
+            this.groqModel =
+              localStorage.getItem("ai_gemini_model") || "gemini-3.6-flash";
+            if (!this.groqApiKey) this.setariDeschise = true;
           },
 
           salveazaSetari() {
-            localStorage.setItem("ai_ollama_url", this.ollamaUrl || "");
-            localStorage.setItem("ai_ollama_model", this.ollamaModel || "");
+            localStorage.setItem("ai_gemini_key", this.groqApiKey || "");
+            localStorage.setItem("ai_gemini_model", this.groqModel || "");
           },
 
           async deschide() {
@@ -779,17 +953,71 @@
             });
           },
 
+          // Transformă textul Markdown primit de la model în HTML stilizat (gen Gemini),
+          // trecut prin DOMPurify pentru siguranță înainte de a fi injectat cu x-html.
+          renderMarkdown(text) {
+            if (!text) return "";
+            try {
+              const html =
+                typeof marked !== "undefined"
+                  ? marked.parse(text, { breaks: true })
+                  : text;
+              return typeof DOMPurify !== "undefined"
+                ? DOMPurify.sanitize(html)
+                : html;
+            } catch (e) {
+              return this.escapeHtml(text);
+            }
+          },
+
+          // Adaugă un mesaj al asistentului în listă. Dacă `animat` e true (cazul răspunsurilor
+          // reale de la model), textul apare treptat, cuvânt cu cuvânt, ca un efect de scriere -
+          // în realitate răspunsul e deja primit integral de la Gemini, doar afișarea e treptată.
+          pushMesajAsistent(text, animat = false) {
+            const idx =
+              this.mesaje.push({
+                type: "text",
+                role: "assistant",
+                text,
+                displayed: animat ? "" : text,
+                seScrie: false,
+              }) - 1;
+            if (animat) this.animeazaAparitieTreptata(idx, text);
+            else this.scrollJos();
+            return idx;
+          },
+
+          animeazaAparitieTreptata(idx, textFinal) {
+            const cuvinte = textFinal.split(/(\s+)/); // păstrează și spațiile ca „token"-uri
+            let i = 0;
+            const m = this.mesaje[idx];
+            if (!m) return;
+            m.seScrie = true;
+            const pas = () => {
+              const mesajCurent = this.mesaje[idx];
+              if (!mesajCurent) return;
+              i++;
+              mesajCurent.displayed = cuvinte.slice(0, i).join("");
+              this.scrollJos();
+              if (i < cuvinte.length) {
+                // Viteză naturală: puțin mai lent la punctuație, per ansamblu ~ ritm de citire rapidă.
+                const ultimulToken = cuvinte[i - 1] || "";
+                const intarziere = /[.,!?:;\n]/.test(ultimulToken) ? 60 : 16;
+                setTimeout(pas, intarziere);
+              } else {
+                mesajCurent.seScrie = false;
+              }
+            };
+            pas();
+          },
+
           // ---------- Trimitere mesaj + buclă de tool-calling ----------
           async trimiteMesaj() {
             const text = this.input.trim();
             if (!text || this.seGandeste) return;
-            if (!this.ollamaUrl) {
+            if (!this.groqApiKey) {
               this.setariDeschise = true;
-              this.mesaje.push({
-                type: "text",
-                role: "assistant",
-                text: "Configurează mai întâi adresa modelului local (buton ⚙️ sus).",
-              });
+              this.pushMesajAsistent("Configurează mai întâi cheia API Gemini (buton ⚙️ sus).");
               return;
             }
             this.mesaje.push({ type: "text", role: "user", text });
@@ -811,11 +1039,7 @@
             try {
               await this.rulaazaBuclaModel();
             } catch (e) {
-              this.mesaje.push({
-                type: "text",
-                role: "assistant",
-                text: "Eroare la conectarea cu modelul: " + e.message,
-              });
+              this.pushMesajAsistent("Eroare la conectarea cu modelul: " + e.message);
             } finally {
               this.seGandeste = false;
               this.scrollJos();
@@ -825,8 +1049,22 @@
           promptSistem() {
             return `Ești asistentul AI al aplicației Priority ERP (gestiune stoc, vânzări, clienți) a unui magazin mic.
 Data curentă: ${new Date().toLocaleDateString("ro-RO")}.
-Vorbești română, scurt și concret, ca un coleg eficient.
-Ai la dispoziție funcții (tools) pentru a citi date reale - folosește-le mereu în loc să presupui prețuri, stocuri sau istoricul clienților.
+Vorbești română, ca un coleg de încredere care chiar înțelege afacerea utilizatorului - prietenos, dar profesionist.
+
+STIL DE RĂSPUNS - foarte important:
+- NU răspunde niciodată sec, cu o singură propoziție seacă. Dă răspunsuri complete, cu context și substanță.
+- Când prezinți date (stoc, vânzări, clienți, rapoarte), interfața afișează deja automat un card vizual frumos cu tabelul/lista completă - tu NU mai trebuie să înșiri toate rândurile în text. În schimb, comentează datele: ce observi, ce e important, ce ar trebui să-l îngrijoreze sau să-l bucure pe utilizator (ex: "Ai 3 produse pe stoc zero, printre care X, care s-a vândut bine luna trecută - poate merită reaprovizionat urgent").
+- Fii proactiv: după ce răspunzi la întrebare, propune mereu un pas următor relevant, o observație suplimentară sau o întrebare utilă ("Vrei să-ți arăt și profitul pe ultima lună?", "Observ că X are stoc redus, vrei să pregătesc o notiță de reaprovizionare?"). Nu inventa acțiuni pe care nu le poți face.
+- Folosește structură atunci când ajută (liste scurte, bold cu **), dar fără să pari robotic sau birocratic.
+- Dacă utilizatorul te întreabă ce poți face (ex: "ce știi să faci?", "ce poți face?", "ajutor"), NU răspunde cu o propoziție scurtă - descrie pe larg, organizat pe categorii, fiecare lucru pe care îl poți face concret:
+  1. Căutare & consultare: căutare produse după nume/cod cu stoc și cost curent, căutare clienți după nume/telefon.
+  2. Analiză stoc: rezumat complet al stocului (valoare totală, produse epuizate, produse cu stoc redus) și pot semnala ce ar trebui reaprovizionat.
+  3. Rapoarte de vânzări: totaluri (încasări, profit estimat, număr vânzări) pe azi/săptămână/lună/an/tot, plus liste detaliate cu exact ce s-a vândut (produs, cantitate, preț, client, dată) pentru orice perioadă.
+  4. Clasamente: top produse după cantitate vândută sau după profit.
+  5. Istoric client: ultimele vânzări către un anumit client.
+  6. Acțiuni (cu confirmarea ta obligatorie înainte de execuție): înregistrare vânzare rapidă (ex: "@Ion #Laptop 500 lei"), creare notiță pe dashboard.
+  Menționează și scurtătura cu # pentru produse și @ pentru clienți.
+Ai la dispoziție funcții (tools) pentru a citi date reale - folosește-le mereu în loc să presupui prețuri, stocuri sau istoricul clienților. Dacă o întrebare atinge mai multe aspecte (ex: "cum stau cu stocul și ce am vândut luna asta"), apelează pe rând toate funcțiile relevante înainte să răspunzi, ca să dai un răspuns complet dintr-o dată.
 Când utilizatorul cere o vânzare rapidă (ex: "@Ion #Laptop 500 lei"), primești deja în mesaj un context cu id_produs/id_client rezolvate - folosește acele ID-uri exacte când apelezi creeaza_vanzare.
 Funcțiile care scriu date (creeaza_vanzare, creeaza_nota) NU se execută niciodată direct - interfața îi va cere mereu confirmarea utilizatorului. Tu doar apelezi funcția o singură dată cu datele corecte; rezultatul funcției va spune dacă utilizatorul a confirmat sau a anulat.
 Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu știi prețul de vânzare cerut de utilizator), întreabă înainte de a apela funcția de vânzare.`;
@@ -915,6 +1153,25 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               {
                 type: "function",
                 function: {
+                  name: "lista_vanzari_detaliat",
+                  description:
+                    "Listă detaliată, rând cu rând, cu exact ce s-a vândut (produs, cantitate, preț, client, dată) într-o perioadă. Folosește-o când utilizatorul întreabă ce a vândut / vrea lista vânzărilor, nu doar totaluri.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      perioada: {
+                        type: "string",
+                        enum: ["azi", "saptamana", "luna", "an", "tot"],
+                      },
+                      limita: { type: "number", description: "Numărul maxim de rânduri returnate (implicit 25)" },
+                    },
+                    required: ["perioada"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
                   name: "creeaza_vanzare",
                   description:
                     "Înregistrează o vânzare rapidă. Necesită confirmarea utilizatorului înainte de execuție.",
@@ -961,11 +1218,17 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           },
 
           async apelOllama() {
-            const res = await fetch(this.ollamaUrl.replace(/\/$/, "") + "/v1/chat/completions", {
+            // Trece prin Gemini (cloud, prin endpoint-ul compatibil OpenAI) în loc de
+            // Ollama local - acelasi format de request/raspuns, doar endpoint-ul
+            // si autentificarea difera.
+            const res = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + this.groqApiKey,
+              },
               body: JSON.stringify({
-                model: this.ollamaModel,
+                model: this.groqModel || "gemini-2.5-flash",
                 messages: this.istoricConversatie,
                 tools: this.definitiiTools(),
                 tool_choice: "auto",
@@ -1010,6 +1273,11 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   }
 
                   const rezultat = await this.executaToolCitire(nume, args);
+                  const card = this.construiesteCard(nume, args, rezultat);
+                  if (card) {
+                    this.mesaje.push({ type: "card", card });
+                    this.scrollJos();
+                  }
                   this.istoricConversatie.push({
                     role: "tool",
                     tool_call_id: tc.id,
@@ -1024,7 +1292,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               const textFinal = (mesaj.content || "").trim();
               if (textFinal) {
                 this.istoricConversatie.push({ role: "assistant", content: textFinal });
-                this.mesaje.push({ type: "text", role: "assistant", text: textFinal });
+                this.pushMesajAsistent(textFinal, true);
               }
               return;
             }
@@ -1113,6 +1381,43 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   };
                 }
 
+                case "lista_vanzari_detaliat": {
+                  const cutoff2 = this.calculeazaCutoff(args.perioada);
+                  const vanzari2 = await this.pb.collection("flow_sale").getFullList({
+                    filter: cutoff2 ? `data_vanzare >= "${cutoff2}"` : "",
+                    sort: "-data_vanzare",
+                  });
+                  const limita2 = args.limita || 25;
+                  const itemiPerVanzare = await Promise.all(
+                    vanzari2.map((v) =>
+                      this.pb
+                        .collection("flow_sale_item")
+                        .getFullList({ filter: `id_vanzare = "${v.id}"` })
+                        .catch(() => []),
+                    ),
+                  );
+                  const randuri = [];
+                  vanzari2.forEach((v, i) => {
+                    (itemiPerVanzare[i] || []).forEach((it) => {
+                      const prod = this.produse.find((p) => p.id === it.id_produs);
+                      randuri.push({
+                        data: v.data_vanzare,
+                        client: v.client_nume || "Anonim",
+                        produs: prod ? prod.nume : it.id_produs,
+                        cantitate: it.cantitate_vanduta || 0,
+                        pret_unitar: it.pret_vanzare_real || 0,
+                        total: (it.pret_vanzare_real || 0) * (it.cantitate_vanduta || 0),
+                        status_plata: v.status_plata,
+                      });
+                    });
+                  });
+                  return {
+                    perioada: args.perioada,
+                    numar_randuri_total: randuri.length,
+                    randuri: randuri.slice(0, limita2),
+                  };
+                }
+
                 case "top_produse": {
                   const toateItemi = await this.pb.collection("flow_sale_item").getFullList();
                   const agregat = {};
@@ -1151,6 +1456,111 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             else if (perioada === "an") d.setFullYear(d.getFullYear() - 1);
             else return null;
             return d.toISOString();
+          },
+
+          // ---------- Carduri vizuale pentru rezultatele funcțiilor de citire ----------
+          // Nu se trimit modelului - sunt doar pentru afișare frumoasă în chat, în plus
+          // față de textul de analiză pe care îl scrie modelul.
+          construiesteCard(nume, args, rezultat) {
+            const leiFmt = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString("ro-RO") + " lei";
+            const dataFmt = (d) => {
+              try {
+                return new Date(d).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "2-digit" });
+              } catch (e) {
+                return d || "-";
+              }
+            };
+            switch (nume) {
+              case "cauta_produse": {
+                if (!rezultat || !rezultat.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Produse găsite",
+                  iconTip: "produs",
+                  coloane: ["Produs", "Cod site", "Stoc", "Cost mediu"],
+                  randuri: rezultat.map((p) => [p.nume, p.cod_site || "-", String(p.stoc_actual), leiFmt(p.pret_cost_mediu)]),
+                };
+              }
+              case "rezumat_stoc": {
+                if (!rezultat) return null;
+                return {
+                  tip: "stoc",
+                  titlu: "Rezumat stoc",
+                  valoareStoc: leiFmt(rezultat.valoare_stoc_cost),
+                  totalProduse: rezultat.total_produse,
+                  faraStoc: rezultat.produse_fara_stoc || [],
+                  stocRedus: rezultat.produse_stoc_redus || [],
+                };
+              }
+              case "cauta_clienti": {
+                if (!rezultat || !rezultat.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Clienți găsiți",
+                  iconTip: "client",
+                  coloane: ["Nume", "Telefon", "Email"],
+                  randuri: rezultat.map((c) => [c.nume, c.telefon || "-", c.email || "-"]),
+                };
+              }
+              case "istoric_client": {
+                if (!rezultat || !rezultat.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Istoric vânzări client",
+                  iconTip: "vanzare",
+                  coloane: ["Dată", "Status", "Produse"],
+                  randuri: rezultat.map((v) => [dataFmt(v.data), v.status_plata === "platit" ? "Plătit" : "Datorie", (v.produse || []).join(", ")]),
+                };
+              }
+              case "raport_vanzari": {
+                if (!rezultat) return null;
+                const etichete = { azi: "azi", saptamana: "ultima săptămână", luna: "ultima lună", an: "ultimul an", tot: "tot timpul" };
+                return {
+                  tip: "statistici",
+                  titlu: "Raport vânzări - " + (etichete[rezultat.perioada] || rezultat.perioada),
+                  statistici: [
+                    { eticheta: "Nr. vânzări", valoare: String(rezultat.numar_vanzari) },
+                    { eticheta: "Total încasat", valoare: leiFmt(rezultat.total_incasat) },
+                    { eticheta: "Profit estimat", valoare: leiFmt(rezultat.profit_estimat) },
+                  ],
+                };
+              }
+              case "lista_vanzari_detaliat": {
+                if (!rezultat || !rezultat.randuri || !rezultat.randuri.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Ce s-a vândut",
+                  subtitlu:
+                    rezultat.numar_randuri_total > rezultat.randuri.length
+                      ? `${rezultat.randuri.length} din ${rezultat.numar_randuri_total} rânduri`
+                      : `${rezultat.randuri.length} rânduri`,
+                  iconTip: "vanzare",
+                  coloane: ["Dată", "Client", "Produs", "Cant.", "Preț", "Total", "Status"],
+                  randuri: rezultat.randuri.map((r) => [
+                    dataFmt(r.data),
+                    r.client,
+                    r.produs,
+                    String(r.cantitate),
+                    leiFmt(r.pret_unitar),
+                    leiFmt(r.total),
+                    r.status_plata === "platit" ? "Plătit" : "Datorie",
+                  ]),
+                };
+              }
+              case "top_produse": {
+                if (!rezultat || !rezultat.length) return null;
+                const dupaProfit = args.criteriu === "profit";
+                return {
+                  tip: "tabel",
+                  titlu: dupaProfit ? "Top produse după profit" : "Top produse vândute",
+                  iconTip: "top",
+                  coloane: ["#", "Produs", dupaProfit ? "Profit" : "Cantitate"],
+                  randuri: rezultat.map((p, i) => [String(i + 1), p.produs, dupaProfit ? leiFmt(p.profit) : String(p.cantitate)]),
+                };
+              }
+              default:
+                return null;
+            }
           },
 
           // ---------- Carduri de confirmare pentru scriere ----------
@@ -1206,7 +1616,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               this.confirmarePendinte = null;
               await this.rulaazaBuclaModel();
             } catch (e) {
-              this.mesaje.push({ type: "text", role: "assistant", text: "Eroare: " + e.message });
+              this.pushMesajAsistent("Eroare: " + e.message);
             } finally {
               this.seGandeste = false;
               this.scrollJos();
