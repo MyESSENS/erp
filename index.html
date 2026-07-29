@@ -5848,6 +5848,11 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           agentStartUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/start",
           agentStopUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/stop",
           agentStatusUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/status",
+          // Aceleași butoane pornesc/opresc și Ollama, în paralel cu PocketBase - fără bază
+          // de date site-ul e oricum inutilizabil, deci n-are rost un buton separat doar
+          // pentru asistentul AI. Vezi apeleazaAgentOllama() mai jos.
+          agentStartOllamaUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/start-ollama",
+          agentStopOllamaUrl: "https://desktop-m3811cb.taildb497b.ts.net:8091/stop-ollama",
           agentToken: "54lytr5siRdx9zgHt3YlIc67t5orVXE7RE6_BdB1nwg",
 
           // Stare pentru butonul manual "Reîncearcă acum" de pe ecranul offline.
@@ -5953,6 +5958,16 @@ async verificaAgentPc() {
   }
 },
 
+// Apel simplu către agent.py pentru pornirea/oprirea Ollama, în paralel cu PocketBase
+// (vezi pornesteServerRemote/opresteServerRemote mai jos) - fără feedback vizual dedicat.
+// Dacă eșuează (calculatorul oprit, Ollama neconfigurat în agent etc.), asistentul AI
+// rămâne pur și simplu indisponibil, fără să blocheze restul aplicației.
+apeleazaAgentOllama(url) {
+  fetch(url, { method: "POST", headers: { "X-Agent-Token": this.agentToken } }).catch(
+    (e) => console.warn("Ollama (agent.py) nu a răspuns:", e),
+  );
+},
+
 // Apelează direct agentul de pe calculator (agent.py), prin URL-ul expus pe Tailscale, ca
 // să pornească PocketBase - fără notificare, fără pas intermediar. Necesită doar
 // ca acest dispozitiv să fie conectat la rețeaua Tailscale în momentul apăsării butonului.
@@ -5960,6 +5975,9 @@ async pornesteServerRemote() {
   if (this.pornireServerInCurs) return;
   this.pornireServerInCurs = true;
   this.pornireServerRezultat = null;
+  // Pornim și Ollama în același timp - fără bază de date site-ul e inutilizabil oricum,
+  // deci n-are rost un buton separat doar pentru asistentul AI.
+  this.apeleazaAgentOllama(this.agentStartOllamaUrl);
   try {
     const r = await fetch(this.agentStartUrl, {
       method: "POST",
@@ -5991,9 +6009,11 @@ async pornesteServerRemote() {
 // ca acest dispozitiv să fie conectat la rețeaua Tailscale în momentul apăsării butonului.
 async opresteServerRemote() {
   if (this.oprireServerInCurs) return;
-  if (!confirm("Sigur vrei să oprești serverul PocketBase de pe calculator?")) return;
+  if (!confirm("Sigur vrei să oprești serverul PocketBase și Ollama de pe calculator?")) return;
   this.oprireServerInCurs = true;
   this.oprireServerRezultat = null;
+  // Oprim și Ollama în același timp cu PocketBase, din același buton.
+  this.apeleazaAgentOllama(this.agentStopOllamaUrl);
   try {
     const r = await fetch(this.agentStopUrl, {
       method: "POST",
