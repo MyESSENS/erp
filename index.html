@@ -876,6 +876,27 @@
         color: #fda4af !important;
       }
 
+      /* ===================== LINK FILTRU (minimalist, doar text + săgeată) ===================== */
+      /* Folosit peste tot unde există filtrare/sortare: un simplu link "Filtre" cu o
+         săgeată mică, așezat lângă titlul secțiunii - fără buton, fără fundal, fără chenar.
+         La click, dezvăluie un rând de chip-uri mici chiar deasupra conținutului. */
+      .filtru-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 3px 1px;
+        background: transparent;
+        border: none;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: color 0.15s ease, transform 0.1s ease;
+      }
+      .filtru-link:active {
+        transform: scale(0.94);
+      }
+
       /* Meniu Liquid Bubble 3D */
       .bubble-btn {
         background: linear-gradient(
@@ -1474,6 +1495,301 @@
         </div>
       </div>
 
+      <div class="flex items-center gap-2">
+      <div class="relative">
+        <button
+          @click="deschideCautareGlobala()"
+          title="Căutare globală (⌘K)"
+          class="w-9 h-9 flex items-center justify-center rounded-full bg-white/60 border border-white/70 active:scale-90 transition"
+        >
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+        </button>
+      </div>
+      <div class="relative">
+        <button
+          @click="notificariDeschis = !notificariDeschis"
+          title="Notificări"
+          class="w-9 h-9 flex items-center justify-center rounded-full bg-white/60 border border-white/70 active:scale-90 transition relative"
+        >
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span
+            x-show="alerteActive.length > 0"
+            x-cloak
+            class="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-0.5 rounded-full bg-rose-500 text-white text-[8.5px] font-bold flex items-center justify-center leading-none ring-2 ring-white"
+            x-text="alerteActive.length"
+          ></span>
+        </button>
+      </div>
+
+      <!-- Centru de notificări - stil iOS: overlay centrat pe ecran, cu fundal estompat,
+           card-uri individuale ca notificările de pe lockscreen (bulă + titlu + subtitlu). -->
+      <template x-teleport="body">
+        <div
+          x-show="notificariDeschis"
+          x-cloak
+          class="fixed inset-0 z-[70] flex items-start justify-center px-4"
+          style="padding-top: max(5.5rem, env(safe-area-inset-top) + 4.5rem);"
+        >
+          <div
+            x-show="notificariDeschis"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="notificariDeschis = false"
+            class="absolute inset-0 bg-slate-900/25"
+            style="-webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);"
+          ></div>
+
+          <div
+            x-show="notificariDeschis"
+            x-transition:enter="transition duration-300"
+            x-transition:enter-start="opacity-0 scale-90 -translate-y-3"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+            style="transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: top center;"
+            class="relative w-full max-w-[320px] space-y-2"
+          >
+            <div class="flex items-center justify-between px-1.5">
+              <p class="text-[11px] font-extrabold text-white/90 uppercase tracking-widest drop-shadow">Notificări</p>
+              <button
+                type="button"
+                @click="notificariDeschis = false"
+                class="w-6 h-6 rounded-full bg-white/25 backdrop-blur flex items-center justify-center active:scale-90 transition"
+              >
+                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <template x-for="(a, idx) in alerteActive" :key="a.id">
+              <button
+                type="button"
+                @click="a.actiune(); notificariDeschis = false"
+                class="w-full flex items-start gap-3 p-3.5 rounded-[22px] text-left active:scale-[0.98] transition bg-white/90"
+                style="backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); box-shadow: 0 20px 45px -12px rgba(15,23,42,0.28), 0 2px 8px -2px rgba(15,23,42,0.12); border: 1px solid rgba(255,255,255,0.6);"
+              >
+                <span
+                  class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+                  :class="{ 'bg-gradient-to-br from-rose-400 to-rose-600': a.culoare === 'rose', 'bg-gradient-to-br from-amber-400 to-amber-500': a.culoare === 'amber', 'bg-gradient-to-br from-slate-400 to-slate-500': a.culoare === 'slate' }"
+                >
+                  <svg x-show="a.culoare === 'rose'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+                  <svg x-show="a.culoare === 'amber'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                  <svg x-show="a.culoare === 'slate'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12c2.5-5.5 6.5-8.25 9.75-8.25s7.25 2.75 9.75 8.25c-2.5 5.5-6.5 8.25-9.75 8.25S4.75 17.5 2.25 12z" /></svg>
+                </span>
+                <div class="flex-1 min-w-0 pt-0.5">
+                  <p class="text-[12.5px] font-bold text-slate-800 truncate" x-text="a.titlu"></p>
+                  <p class="text-[10.5px] text-slate-400 mt-0.5 truncate" x-text="a.detaliu"></p>
+                </div>
+                <svg class="w-3.5 h-3.5 text-slate-300 flex-shrink-0 mt-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </template>
+
+            <template x-if="alerteActive.length === 0">
+              <div
+                class="w-full flex flex-col items-center gap-2 p-8 rounded-[22px] bg-white/90"
+                style="backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); box-shadow: 0 20px 45px -12px rgba(15,23,42,0.28), 0 2px 8px -2px rgba(15,23,42,0.12); border: 1px solid rgba(255,255,255,0.6);"
+              >
+                <span class="w-10 h-10 rounded-full bg-teal-50 text-teal-500 flex items-center justify-center">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                </span>
+                <p class="text-[11.5px] text-slate-400 italic">Totul e în regulă.</p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- ===== CĂUTARE GLOBALĂ (⌘K) - overlay stil "command palette" iOS ===== -->
+      <template x-teleport="body">
+        <div
+          x-show="globalSearchOpen"
+          x-cloak
+          class="fixed inset-0 z-[80] flex items-start justify-center px-4"
+          style="padding-top: max(5.5rem, env(safe-area-inset-top) + 4.5rem);"
+        >
+          <div
+            x-show="globalSearchOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="inchideCautareGlobala()"
+            class="absolute inset-0 bg-slate-900/35"
+            style="-webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);"
+          ></div>
+
+          <div
+            x-show="globalSearchOpen"
+            x-transition:enter="transition duration-300"
+            x-transition:enter-start="opacity-0 scale-90 -translate-y-3"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+            style="transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: top center;"
+            class="relative w-full max-w-[380px] max-h-[75vh] flex flex-col rounded-[28px] overflow-hidden bg-white/95"
+            :style="'backdrop-filter: blur(28px) saturate(180%); -webkit-backdrop-filter: blur(28px) saturate(180%); box-shadow: 0 20px 45px -12px rgba(15,23,42,0.28), 0 2px 8px -2px rgba(15,23,42,0.12); border: 1px solid rgba(255,255,255,0.6);'"
+          >
+            <!-- Câmp de căutare -->
+            <div class="flex items-center gap-2.5 px-4 py-3.5 border-b border-slate-100 flex-shrink-0">
+              <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                x-ref="globalSearchInput"
+                x-model="globalSearchQuery"
+                placeholder="Caută clienți, produse, facturi, comenzi…"
+                class="flex-1 min-w-0 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
+                @keydown.escape="inchideCautareGlobala()"
+              />
+              <button
+                type="button"
+                x-show="globalSearchQuery"
+                x-cloak
+                @click="globalSearchQuery = ''"
+                class="w-5 h-5 rounded-full bg-slate-200 text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition"
+              >
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+              <span
+                class="text-[8.5px] font-bold text-slate-300 uppercase tracking-wide border border-slate-200 rounded-md px-1.5 py-0.5 flex-shrink-0"
+              >Esc</span>
+            </div>
+
+            <!-- Rezultate -->
+            <div class="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+              <template x-if="(globalSearchQuery || '').trim().length < 2">
+                <p class="text-center text-[11px] text-slate-400 italic py-10 px-6">
+                  Scrie cel puțin 2 caractere ca să cauți deodată în clienți,
+                  produse, facturi și comenzi.
+                </p>
+              </template>
+
+              <template x-if="(globalSearchQuery || '').trim().length >= 2 && globalSearchNumarRezultate() === 0">
+                <p class="text-center text-[11px] text-slate-400 italic py-10 px-6">
+                  Niciun rezultat pentru "<span x-text="globalSearchQuery"></span>".
+                </p>
+              </template>
+
+              <!-- Clienți -->
+              <template x-if="getGlobalSearchResults().clienti.length > 0">
+                <div class="space-y-1.5">
+                  <p class="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest px-1.5">Clienți</p>
+                  <template x-for="c in getGlobalSearchResults().clienti" :key="'gc-' + c.id">
+                    <button
+                      type="button"
+                      @click="deschideRezultatCautareGlobala('client', c)"
+                      class="w-full flex items-center gap-3 p-2.5 rounded-2xl text-left active:bg-slate-100 transition"
+                    >
+                      <span
+                        class="w-8 h-8 rounded-full bg-gradient-to-br from-rose-300 to-pink-400 flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0"
+                        x-text="(c.nume || '?').trim().charAt(0).toUpperCase()"
+                      ></span>
+                      <span class="min-w-0 flex-1">
+                        <p class="text-[12px] font-bold text-slate-700 truncate" x-text="c.nume"></p>
+                        <p class="text-[9.5px] text-slate-400 truncate" x-text="[c.telefon, c.email].filter(Boolean).join(' • ') || 'Fără date de contact'"></p>
+                      </span>
+                      <svg class="w-3.5 h-3.5 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
+                    </button>
+                  </template>
+                </div>
+              </template>
+
+              <!-- Produse -->
+              <template x-if="getGlobalSearchResults().produse.length > 0">
+                <div class="space-y-1.5">
+                  <p class="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest px-1.5">Produse</p>
+                  <template x-for="p in getGlobalSearchResults().produse" :key="'gp-' + p.id">
+                    <button
+                      type="button"
+                      @click="deschideRezultatCautareGlobala('produs', p)"
+                      class="w-full flex items-center gap-3 p-2.5 rounded-2xl text-left active:bg-slate-100 transition"
+                    >
+                      <span class="w-8 h-8 rounded-xl bg-teal-50 text-teal-500 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <p class="text-[12px] font-bold text-slate-700 truncate" x-text="p.denumire_produs"></p>
+                        <p class="text-[9.5px] text-slate-400 truncate" x-text="(p.cod_site ? 'Cod: ' + p.cod_site + ' · ' : '') + p.stoc_actual + ' buc pe stoc'"></p>
+                      </span>
+                      <svg class="w-3.5 h-3.5 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
+                    </button>
+                  </template>
+                </div>
+              </template>
+
+              <!-- Facturi (vânzări) -->
+              <template x-if="getGlobalSearchResults().facturi.length > 0">
+                <div class="space-y-1.5">
+                  <p class="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest px-1.5">Facturi (vânzări)</p>
+                  <template x-for="v in getGlobalSearchResults().facturi" :key="'gv-' + v.id">
+                    <button
+                      type="button"
+                      @click="deschideRezultatCautareGlobala('factura', v)"
+                      class="w-full flex items-center gap-3 p-2.5 rounded-2xl text-left active:bg-slate-100 transition"
+                    >
+                      <span class="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6M9 8h1M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <p class="text-[12px] font-bold text-slate-700 truncate" x-text="v.client_nume || 'Anonim'"></p>
+                        <p class="text-[9.5px] text-slate-400 truncate" x-text="'Vânzare din ' + formatDataScurta(v.created)"></p>
+                      </span>
+                      <svg class="w-3.5 h-3.5 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
+                    </button>
+                  </template>
+                </div>
+              </template>
+
+              <!-- Comenzi (aprovizionare) -->
+              <template x-if="getGlobalSearchResults().comenzi.length > 0">
+                <div class="space-y-1.5">
+                  <p class="text-[8.5px] font-extrabold text-slate-400 uppercase tracking-widest px-1.5">Comenzi</p>
+                  <template x-for="cmd in getGlobalSearchResults().comenzi" :key="'gcmd-' + cmd.id">
+                    <button
+                      type="button"
+                      @click="deschideRezultatCautareGlobala('comanda', cmd)"
+                      class="w-full flex items-center gap-3 p-2.5 rounded-2xl text-left active:bg-slate-100 transition"
+                    >
+                      <span
+                        class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        :class="cmd.stare === 'primita' ? 'bg-teal-50 text-teal-500' : 'bg-amber-50 text-amber-500'"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                          <path d="M1 3h13v13H1z" />
+                          <path d="M14 8h4l3 3v5h-7V8z" />
+                          <circle cx="5.5" cy="18.5" r="1.5" />
+                          <circle cx="16.5" cy="18.5" r="1.5" />
+                        </svg>
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <p class="text-[12px] font-bold text-slate-700 truncate" x-text="(cmd.referinta_factura || '(fără nr.)') + ' · ' + numeCompanieDupaId(cmd.id_companie)"></p>
+                        <p class="text-[9.5px] text-slate-400 truncate" x-text="cmd.stare === 'primita' ? 'Livrat' : 'Pe drum'"></p>
+                      </span>
+                      <svg class="w-3.5 h-3.5 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" /></svg>
+                    </button>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <div class="relative" @click.outside="headerMenuDeschis = false">
         <button
           @click="headerMenuDeschis = !headerMenuDeschis"
@@ -1578,6 +1894,7 @@
           </template>
         </div>
       </div>
+      </div>
       </header>
     </div>
 
@@ -1678,7 +1995,7 @@
                 type="password"
                 name="password"
                 required
-                placeholder="Introdu parola."
+                placeholder="••••••••"
                 @input="loginEroare = false"
                 class="w-full bg-transparent text-[13px] text-slate-800 focus:outline-none mt-0.5 placeholder:text-slate-300"
               />
@@ -2619,11 +2936,17 @@ STIL DE RĂSPUNS - foarte important:
   3. Rapoarte de vânzări: totaluri (încasări, profit estimat, număr vânzări) pe azi/săptămână/lună/an/tot, plus liste detaliate cu exact ce s-a vândut (produs, cantitate, preț, client, dată) pentru orice perioadă.
   4. Clasamente: top produse după cantitate vândută sau după profit.
   5. Istoric client: ultimele vânzări către un anumit client.
-  6. Acțiuni (cu confirmarea ta obligatorie înainte de execuție): înregistrare vânzare rapidă (ex: "@Ion #Laptop 500 MDL"), creare notiță.
+  6. Notițe: creezi notițe noi (cu confirmarea ta).
+  7. Produse: poți crea, edita (nume, cod, barcode, stoc, cost mediu) sau șterge produse din catalog (cu confirmare).
+  8. Achiziții/aprovizionare: poți lista achizițiile recente, înregistra o achiziție nouă (produsele intră direct în stoc, cu recalcularea automată a costului mediu), edita datele generale ale unei achiziții sau o poți șterge (cu confirmare).
+  9. Registru financiar: poți lista tranzacțiile din registru (filtrate pe cont/tip/perioadă), adăuga manual o tranzacție (ex: cheltuială diversă), edita sau șterge o tranzacție existentă (cu confirmare).
+  10. Creanțe: poți afișa situația creanțelor neîncasate (cine datorează, cât, de câte zile) și poți înregistra o încasare pentru o creanță (cu confirmare).
+  11. Vânzări: înregistrare vânzare rapidă (ex: "@Ion #Laptop 500 MDL"), cu confirmare.
   Menționează și scurtătura cu # pentru produse și @ pentru clienți.
 Ai la dispoziție funcții (tools) pentru a citi date reale - folosește-le mereu în loc să presupui prețuri, stocuri sau istoricul clienților. Dacă o întrebare atinge mai multe aspecte (ex: "cum stau cu stocul și ce am vândut luna asta"), apelează pe rând toate funcțiile relevante înainte să răspunzi, ca să dai un răspuns complet dintr-o dată.
 Când utilizatorul cere o vânzare rapidă (ex: "@Ion #Laptop 500 MDL"), primești deja în mesaj un context cu id_produs/id_client rezolvate - folosește acele ID-uri exacte când apelezi creeaza_vanzare.
-Funcțiile care scriu date (creeaza_vanzare, creeaza_nota) NU se execută niciodată direct - interfața îi va cere mereu confirmarea utilizatorului. Tu doar apelezi funcția o singură dată cu datele corecte; rezultatul funcției va spune dacă utilizatorul a confirmat sau a anulat.
+Funcțiile care scriu date (creeaza_vanzare, creeaza_nota, creeaza_produs, editeaza_produs, sterge_produs, creeaza_achizitie, editeaza_achizitie, sterge_achizitie, creeaza_tranzactie_registru, editeaza_tranzactie_registru, sterge_tranzactie_registru, incaseaza_creanta) NU se execută niciodată direct - interfața îi va cere mereu confirmarea utilizatorului. Tu doar apelezi funcția o singură dată cu datele corecte; rezultatul funcției va spune dacă utilizatorul a confirmat sau a anulat.
+ATENȚIE la acțiunile distructive: pentru sterge_produs, sterge_achizitie și sterge_tranzactie_registru, verifică prin conversație că utilizatorul chiar vrea să șteargă definitiv (nu doar să corecteze o valoare) - dacă intenția e neclară, întreabă înainte de a apela funcția. Ștergerea unei achiziții NU reversează automat stocul/registrul.
 IMPORTANT despre notițe: tu poți doar crea notițe noi - NU ai posibilitatea să le fixezi (pin) pe dashboard. O notiță creată de tine apare doar în lista de Notițe; ca să apară și pe dashboard, utilizatorul trebuie să o bifeze manual de acolo (butonul cu steluța). Când confirmi crearea unei notițe, spune-i clar utilizatorului că, dacă vrea s-o vadă pe dashboard, trebuie s-o fixeze manual din tab-ul Notițe.
 Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu știi prețul de vânzare cerut de utilizator), întreabă înainte de a apela funcția de vânzare.`;
           },
@@ -2842,6 +3165,234 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   },
                 },
               },
+              // ---------- PRODUSE: creare / editare / ștergere ----------
+              {
+                type: "function",
+                function: {
+                  name: "creeaza_produs",
+                  description: "Creează un produs nou în catalog. Necesită confirmarea utilizatorului înainte de execuție.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      denumire_produs: { type: "string" },
+                      cod_site: { type: "string", description: "Codul/SKU-ul produsului (obligatoriu)." },
+                      barcode: { type: "string" },
+                      id_companie: { type: "string", description: "id-ul companiei; dacă lipsește, se folosește prima companie disponibilă." },
+                      stoc_actual: { type: "number", description: "Stoc inițial, implicit 0." },
+                      pret_cost_mediu: { type: "number", description: "Cost mediu inițial, implicit 0." },
+                    },
+                    required: ["denumire_produs", "cod_site"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "editeaza_produs",
+                  description: "Editează un produs existent (nume, cod, barcode, stoc, cost mediu, companie). Necesită confirmarea utilizatorului. ATENȚIE: câmpul stoc_actual SETEAZĂ direct valoarea (nu adaugă) - folosește-l doar pentru corecții, nu pentru recepții normale de marfă (acelea trec prin inregistreaza_receptie_din_factura / creeaza_achizitie).",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      id_produs: { type: "string" },
+                      denumire_produs: { type: "string" },
+                      cod_site: { type: "string" },
+                      barcode: { type: "string" },
+                      id_companie: { type: "string" },
+                      stoc_actual: { type: "number" },
+                      pret_cost_mediu: { type: "number" },
+                    },
+                    required: ["id_produs"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "sterge_produs",
+                  description: "Șterge definitiv un produs din catalog. Necesită confirmarea utilizatorului. ATENȚIE: nu se poate anula; istoricul de vânzări/achiziții care referă acest produs poate rămâne cu referințe orfane.",
+                  parameters: {
+                    type: "object",
+                    properties: { id_produs: { type: "string" } },
+                    required: ["id_produs"],
+                  },
+                },
+              },
+              // ---------- ACHIZIȚII / COMENZI DE APROVIZIONARE ----------
+              {
+                type: "function",
+                function: {
+                  name: "lista_achizitii",
+                  description: "Listează achiziții/comenzi de aprovizionare recente, opțional filtrate după text (referință factură/descriere) sau stare.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      query: { type: "string", description: "text de căutare în referința facturii sau descriere" },
+                      stare: { type: "string", enum: ["primita", "in_asteptare"] },
+                      limita: { type: "number", description: "Numărul maxim de rânduri returnate (implicit 15)" },
+                    },
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "creeaza_achizitie",
+                  description: "Înregistrează o achiziție/recepție de marfă: produsele intră direct în stoc, cu recalcularea automată a costului mediu ponderat, și se creează tranzacția de plată în registru. Necesită confirmarea utilizatorului înainte de execuție.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      referinta_factura: { type: "string" },
+                      produse: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id_produs: { type: "string" },
+                            nume_produs: { type: "string" },
+                            cantitate: { type: "number" },
+                            pret_achizitie: { type: "number", description: "preț de achiziție unitar" },
+                          },
+                          required: ["id_produs", "cantitate", "pret_achizitie"],
+                        },
+                      },
+                      nume_cont: { type: "string", description: "numele contului din care se plătește; dacă lipsește, se folosește contul operativ" },
+                      taxa_shopping: { type: "number" },
+                      bonus_site: { type: "number" },
+                      descriere: { type: "string" },
+                      data_factura: { type: "string" },
+                    },
+                    required: ["referinta_factura", "produse"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "editeaza_achizitie",
+                  description: "Editează datele generale ale unei achiziții existente (referință factură, descriere, data facturii, stare). NU modifică produsele/cantitățile deja recepționate - pentru corecții de stoc folosește editeaza_produs. Necesită confirmarea utilizatorului.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      id_achizitie: { type: "string" },
+                      referinta_factura: { type: "string" },
+                      descriere: { type: "string" },
+                      data_factura: { type: "string" },
+                      stare: { type: "string", enum: ["primita", "in_asteptare"] },
+                    },
+                    required: ["id_achizitie"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "sterge_achizitie",
+                  description: "Șterge definitiv o achiziție din registru. Necesită confirmarea utilizatorului. ATENȚIE: NU reversează automat stocul produselor sau tranzacția din registrul financiar deja generate de această achiziție - acelea trebuie corectate manual (editeaza_produs / sterge_tranzactie_registru) dacă e nevoie.",
+                  parameters: {
+                    type: "object",
+                    properties: { id_achizitie: { type: "string" } },
+                    required: ["id_achizitie"],
+                  },
+                },
+              },
+              // ---------- REGISTRU FINANCIAR (ledger) ----------
+              {
+                type: "function",
+                function: {
+                  name: "lista_tranzactii_registru",
+                  description: "Listează tranzacții din registrul financiar (ledger), opțional filtrate după cont, tip sau perioadă.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      nume_cont: { type: "string" },
+                      tip_tranzactie: { type: "string", enum: ["achizitie", "vanzare", "transfer", "plata_datorie", "incasare_creanta"] },
+                      perioada: { type: "string", enum: ["azi", "saptamana", "luna", "an", "tot"] },
+                      limita: { type: "number", description: "implicit 20" },
+                    },
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "creeaza_tranzactie_registru",
+                  description: "Adaugă manual o tranzacție în registrul financiar (ex: corecție, cheltuială diversă). Pentru vânzări/achiziții/încasări de creanțe folosește tool-urile dedicate (creeaza_vanzare, creeaza_achizitie, incaseaza_creanta), care actualizează corect și stocul/creanțele. Necesită confirmarea utilizatorului.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      nume_cont: { type: "string" },
+                      suma: { type: "number", description: "pozitiv = intrare în cont, negativ = ieșire din cont" },
+                      tip_tranzactie: { type: "string", enum: ["achizitie", "vanzare", "transfer", "plata_datorie", "incasare_creanta"] },
+                      descriere: { type: "string" },
+                      data_tranzactie: { type: "string" },
+                    },
+                    required: ["nume_cont", "suma", "tip_tranzactie"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "editeaza_tranzactie_registru",
+                  description: "Editează o tranzacție existentă din registrul financiar (sumă, descriere, dată, tip, cont). Necesită confirmarea utilizatorului. ATENȚIE: dacă tranzacția e legată de o vânzare/achiziție/creanță (marcaj [REF:...] în descriere), modificarea sumei poate desincroniza acel istoric.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      id_tranzactie: { type: "string" },
+                      nume_cont: { type: "string" },
+                      suma: { type: "number" },
+                      tip_tranzactie: { type: "string", enum: ["achizitie", "vanzare", "transfer", "plata_datorie", "incasare_creanta"] },
+                      descriere: { type: "string" },
+                      data_tranzactie: { type: "string" },
+                    },
+                    required: ["id_tranzactie"],
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "sterge_tranzactie_registru",
+                  description: "Șterge definitiv o tranzacție din registrul financiar. Necesită confirmarea utilizatorului. ATENȚIE: afectează direct soldul contului; dacă tranzacția e o încasare de creanță sau legată de o vânzare/achiziție, ștergerea poate desincroniza acel istoric.",
+                  parameters: {
+                    type: "object",
+                    properties: { id_tranzactie: { type: "string" } },
+                    required: ["id_tranzactie"],
+                  },
+                },
+              },
+              // ---------- CREANȚE ----------
+              {
+                type: "function",
+                function: {
+                  name: "situatie_creante",
+                  description: "Situația creanțelor (datoriilor) neîncasate de la clienți: cine datorează, cât și de câte zile.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      nume_client: { type: "string", description: "filtrează după un anumit client (opțional)" },
+                      doar_intarziate: { type: "boolean", description: "true = arată doar creanțele restante de peste 14 zile" },
+                    },
+                  },
+                },
+              },
+              {
+                type: "function",
+                function: {
+                  name: "incaseaza_creanta",
+                  description: "Înregistrează o încasare (plată parțială sau totală) pentru o creanță existentă a unui client. Necesită confirmarea utilizatorului.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      id_creanta: { type: "string", description: "id-ul creanței (vine din situatie_creante); dacă lipsește, se caută după nume_client" },
+                      nume_client: { type: "string" },
+                      suma: { type: "number" },
+                      nume_cont: { type: "string", description: "contul în care intră banii; implicit contul operativ" },
+                    },
+                    required: ["suma"],
+                  },
+                },
+              },
             ];
           },
 
@@ -3054,7 +3605,17 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   if (
                     nume === "creeaza_vanzare" ||
                     nume === "creeaza_nota" ||
-                    nume === "inregistreaza_receptie_din_factura"
+                    nume === "inregistreaza_receptie_din_factura" ||
+                    nume === "creeaza_produs" ||
+                    nume === "editeaza_produs" ||
+                    nume === "sterge_produs" ||
+                    nume === "creeaza_achizitie" ||
+                    nume === "editeaza_achizitie" ||
+                    nume === "sterge_achizitie" ||
+                    nume === "creeaza_tranzactie_registru" ||
+                    nume === "editeaza_tranzactie_registru" ||
+                    nume === "sterge_tranzactie_registru" ||
+                    nume === "incaseaza_creanta"
                   ) {
                     // Acțiune de scriere: oprim bucla, arătăm cardul de confirmare
                     // și așteptăm click-ul utilizatorului (vezi confirmaAactiune()).
@@ -3235,6 +3796,77 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                     .slice(0, limita);
                 }
 
+                case "lista_achizitii": {
+                  const filtre = [];
+                  if (args.query) {
+                    const q = args.query.replace(/"/g, '\\"');
+                    filtre.push(`(referinta_factura ~ "${q}" || descriere ~ "${q}")`);
+                  }
+                  if (args.stare) filtre.push(`stare = "${args.stare}"`);
+                  const achizitii = await this.pb.collection("flow_purchase").getFullList({
+                    filter: filtre.join(" && "),
+                    sort: "-data_achizitie",
+                  });
+                  const limitaAch = args.limita || 15;
+                  return achizitii.slice(0, limitaAch).map((a) => ({
+                    id: a.id,
+                    referinta_factura: a.referinta_factura,
+                    data_achizitie: a.data_achizitie,
+                    total_general: a.total_general || 0,
+                    stare: a.stare || "primita",
+                    descriere: a.descriere || "",
+                  }));
+                }
+
+                case "lista_tranzactii_registru": {
+                  const cutoffR = this.calculeazaCutoff(args.perioada);
+                  const filtreR = [];
+                  if (cutoffR) filtreR.push(`data_tranzactie >= "${cutoffR}"`);
+                  if (args.tip_tranzactie) filtreR.push(`tip_tranzactie = "${args.tip_tranzactie}"`);
+                  let contR = null;
+                  if (args.nume_cont) {
+                    contR = this.conturi.find((c) =>
+                      (c.nume_cont || "").toLowerCase().includes(args.nume_cont.toLowerCase()),
+                    );
+                    if (contR) filtreR.push(`id_cont = "${contR.id}"`);
+                  }
+                  const tranzactii = await this.pb.collection("ledger_finance").getFullList({
+                    filter: filtreR.join(" && "),
+                    sort: "-data_tranzactie",
+                  });
+                  const limitaR = args.limita || 20;
+                  return tranzactii.slice(0, limitaR).map((t) => {
+                    const cont = this.conturi.find((c) => c.id === t.id_cont);
+                    return {
+                      id: t.id,
+                      cont: cont ? cont.nume_cont : t.id_cont,
+                      suma: t.suma || 0,
+                      tip_tranzactie: t.tip_tranzactie,
+                      descriere: (t.descriere || "").replace(/\[REF:[^\]]+\]/g, "").trim(),
+                      data_tranzactie: t.data_tranzactie,
+                    };
+                  });
+                }
+
+                case "situatie_creante": {
+                  const erpC = this.erpApp();
+                  if (!erpC) return { eroare: "Aplicația principală nu este disponibilă momentan." };
+                  let lista = (erpC.datornici || []).slice();
+                  if (args.nume_client) {
+                    const q = args.nume_client.toLowerCase();
+                    lista = lista.filter((d) => (d.client_nume || "").toLowerCase().includes(q));
+                  }
+                  if (args.doar_intarziate) lista = lista.filter((d) => d.intarziat);
+                  return lista.map((d) => ({
+                    id_creanta: d.id,
+                    client: d.client_nume,
+                    suma_ramasa: d.suma_ramasa,
+                    zile_vechime: d.zileVechime,
+                    intarziat: d.intarziat,
+                    data: d.data,
+                  }));
+                }
+
                 default:
                   return { eroare: "Funcție necunoscută: " + nume };
               }
@@ -3356,6 +3988,52 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   iconTip: "top",
                   coloane: ["#", "Produs", dupaProfit ? "Profit" : "Cantitate"],
                   randuri: rezultat.map((p, i) => [String(i + 1), p.produs, dupaProfit ? leiFmt(p.profit) : String(p.cantitate)]),
+                };
+              }
+              case "lista_achizitii": {
+                if (!rezultat || !rezultat.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Achiziții",
+                  iconTip: "achizitie",
+                  coloane: ["Dată", "Factură", "Total", "Stare"],
+                  randuri: rezultat.map((a) => [
+                    dataFmt(a.data_achizitie),
+                    a.referinta_factura || "-",
+                    leiFmt(a.total_general),
+                    a.stare === "in_asteptare" ? "În așteptare" : "Recepționată",
+                  ]),
+                };
+              }
+              case "lista_tranzactii_registru": {
+                if (!rezultat || !rezultat.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Tranzacții registru",
+                  iconTip: "registru",
+                  coloane: ["Dată", "Cont", "Sumă", "Tip", "Descriere"],
+                  randuri: rezultat.map((t) => [
+                    dataFmt(t.data_tranzactie),
+                    t.cont || "-",
+                    leiFmt(t.suma),
+                    t.tip_tranzactie || "-",
+                    t.descriere || "-",
+                  ]),
+                };
+              }
+              case "situatie_creante": {
+                if (!rezultat || !rezultat.length) return null;
+                return {
+                  tip: "tabel",
+                  titlu: "Creanțe neîncasate",
+                  iconTip: "client",
+                  coloane: ["Client", "Sumă rămasă", "Vechime", "Restant"],
+                  randuri: rezultat.map((d) => [
+                    d.client,
+                    leiFmt(d.suma_ramasa),
+                    d.zile_vechime + " zile",
+                    d.intarziat ? "Da" : "Nu",
+                  ]),
                 };
               }
               default:
@@ -3482,6 +4160,85 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   : "") +
                 `<br>Total general: <b>${this.formatLeiPrecis(totalGeneral)}</b>` +
                 `<br><span class="text-[10px] text-slate-400">Produsele intră în coșul de recepție din tab-ul Aprovizionare (nr. factură, transport și bonus se completează automat acolo) - nimic nu se salvează definitiv până nu apeși Finalizează recepția de acolo.</span>`;
+            } else if (nume === "creeaza_produs") {
+              titlu = "Confirmă produsul nou";
+              rezumatHtml =
+                `<b>${this.scapaHtml(args.denumire_produs || "")}</b><br>` +
+                `Cod site: ${this.scapaHtml(args.cod_site || "-")}` +
+                (args.barcode ? `<br>Barcode: ${this.scapaHtml(args.barcode)}` : "") +
+                `<br>Stoc inițial: ${args.stoc_actual || 0}` +
+                `<br>Cost mediu inițial: ${this.formatLeiPrecis(args.pret_cost_mediu || 0)}`;
+            } else if (nume === "editeaza_produs") {
+              titlu = "Confirmă editarea produsului";
+              const prodEd = this.produse.find((p) => p.id === args.id_produs);
+              const liniiEd = [];
+              if (args.denumire_produs != null) liniiEd.push(`Denumire: <b>${this.scapaHtml(args.denumire_produs)}</b>`);
+              if (args.cod_site != null) liniiEd.push(`Cod site: ${this.scapaHtml(args.cod_site)}`);
+              if (args.barcode != null) liniiEd.push(`Barcode: ${this.scapaHtml(args.barcode)}`);
+              if (args.stoc_actual != null) liniiEd.push(`Stoc: ${args.stoc_actual}`);
+              if (args.pret_cost_mediu != null) liniiEd.push(`Cost mediu: ${this.formatLeiPrecis(args.pret_cost_mediu)}`);
+              rezumatHtml =
+                `Produs: <b>${this.scapaHtml(prodEd ? prodEd.nume : args.id_produs)}</b><br>` +
+                liniiEd.map((l) => `• ${l}`).join("<br>");
+            } else if (nume === "sterge_produs") {
+              titlu = "Confirmă ștergerea produsului";
+              const prodSt = this.produse.find((p) => p.id === args.id_produs);
+              rezumatHtml =
+                `Vrei să ștergi definitiv <b>${this.scapaHtml(prodSt ? prodSt.nume : args.id_produs)}</b>?` +
+                `<br><span class="text-[10px] text-amber-500">⚠️ Nu se poate anula.</span>`;
+            } else if (nume === "creeaza_achizitie") {
+              titlu = "Confirmă achiziția";
+              const liniiAch = (args.produse || []).map((p) => {
+                const prodA = this.produse.find((x) => x.id === p.id_produs);
+                return `${this.scapaHtml(prodA ? prodA.nume : p.nume_produs || p.id_produs)} × ${p.cantitate} @ ${this.formatLeiPrecis(p.pret_achizitie)}`;
+              });
+              const totalAch =
+                (args.produse || []).reduce((s, p) => s + p.cantitate * p.pret_achizitie, 0) +
+                (Number(args.taxa_shopping) || 0) -
+                (Number(args.bonus_site) || 0);
+              rezumatHtml =
+                `Factură: <b>${this.scapaHtml(args.referinta_factura || "")}</b><br>` +
+                liniiAch.map((l) => `• ${l}`).join("<br>") +
+                `<br>Total general: <b>${this.formatLeiPrecis(totalAch)}</b>`;
+            } else if (nume === "editeaza_achizitie") {
+              titlu = "Confirmă editarea achiziției";
+              const liniiEA = [];
+              if (args.referinta_factura != null) liniiEA.push(`Referință factură: <b>${this.scapaHtml(args.referinta_factura)}</b>`);
+              if (args.descriere != null) liniiEA.push(`Descriere: ${this.scapaHtml(args.descriere)}`);
+              if (args.data_factura != null) liniiEA.push(`Data facturii: ${this.scapaHtml(args.data_factura)}`);
+              if (args.stare != null) liniiEA.push(`Stare: ${this.scapaHtml(args.stare)}`);
+              rezumatHtml = liniiEA.map((l) => `• ${l}`).join("<br>") || "Fără modificări specificate.";
+            } else if (nume === "sterge_achizitie") {
+              titlu = "Confirmă ștergerea achiziției";
+              rezumatHtml =
+                `Vrei să ștergi definitiv achiziția selectată?` +
+                `<br><span class="text-[10px] text-amber-500">⚠️ Stocul și tranzacția din registru asociate NU vor fi corectate automat.</span>`;
+            } else if (nume === "creeaza_tranzactie_registru") {
+              titlu = "Confirmă tranzacția";
+              rezumatHtml =
+                `Cont: <b>${this.scapaHtml(args.nume_cont || "")}</b><br>` +
+                `Sumă: <b>${this.formatLeiPrecis(args.suma || 0)}</b> (${args.suma >= 0 ? "intrare" : "ieșire"})<br>` +
+                `Tip: ${this.scapaHtml(args.tip_tranzactie || "")}` +
+                (args.descriere ? `<br>Descriere: ${this.scapaHtml(args.descriere)}` : "");
+            } else if (nume === "editeaza_tranzactie_registru") {
+              titlu = "Confirmă editarea tranzacției";
+              const liniiET = [];
+              if (args.nume_cont != null) liniiET.push(`Cont: <b>${this.scapaHtml(args.nume_cont)}</b>`);
+              if (args.suma != null) liniiET.push(`Sumă: ${this.formatLeiPrecis(args.suma)}`);
+              if (args.tip_tranzactie != null) liniiET.push(`Tip: ${this.scapaHtml(args.tip_tranzactie)}`);
+              if (args.descriere != null) liniiET.push(`Descriere: ${this.scapaHtml(args.descriere)}`);
+              rezumatHtml = liniiET.map((l) => `• ${l}`).join("<br>") || "Fără modificări specificate.";
+            } else if (nume === "sterge_tranzactie_registru") {
+              titlu = "Confirmă ștergerea tranzacției";
+              rezumatHtml =
+                `Vrei să ștergi definitiv această tranzacție din registru?` +
+                `<br><span class="text-[10px] text-amber-500">⚠️ Afectează direct soldul contului.</span>`;
+            } else if (nume === "incaseaza_creanta") {
+              titlu = "Confirmă încasarea";
+              rezumatHtml =
+                `Client: <b>${this.scapaHtml(args.nume_client || "")}</b><br>` +
+                `Sumă încasată: <b>${this.formatLeiPrecis(args.suma || 0)}</b>` +
+                (args.nume_cont ? `<br>Cont: ${this.scapaHtml(args.nume_cont)}` : "");
             }
             const idx =
               this.mesaje.push({
@@ -3526,6 +4283,26 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 // definitivă) - un reload al paginii ar șterge coșul din memorie înainte
                 // ca utilizatorul să apuce să-l verifice, deci NU reîncărcăm aici.
                 necesitaReload = false;
+              } else if (card.confirm.nume === "creeaza_produs") {
+                rezultatTool = await this.executaProdusNou(card.confirm.args);
+              } else if (card.confirm.nume === "editeaza_produs") {
+                rezultatTool = await this.executaProdusEditare(card.confirm.args);
+              } else if (card.confirm.nume === "sterge_produs") {
+                rezultatTool = await this.executaProdusStergere(card.confirm.args);
+              } else if (card.confirm.nume === "creeaza_achizitie") {
+                rezultatTool = await this.executaAchizitieNoua(card.confirm.args);
+              } else if (card.confirm.nume === "editeaza_achizitie") {
+                rezultatTool = await this.executaAchizitieEditare(card.confirm.args);
+              } else if (card.confirm.nume === "sterge_achizitie") {
+                rezultatTool = await this.executaAchizitieStergere(card.confirm.args);
+              } else if (card.confirm.nume === "creeaza_tranzactie_registru") {
+                rezultatTool = await this.executaTranzactieRegistruNoua(card.confirm.args);
+              } else if (card.confirm.nume === "editeaza_tranzactie_registru") {
+                rezultatTool = await this.executaTranzactieRegistruEditare(card.confirm.args);
+              } else if (card.confirm.nume === "sterge_tranzactie_registru") {
+                rezultatTool = await this.executaTranzactieRegistruStergere(card.confirm.args);
+              } else if (card.confirm.nume === "incaseaza_creanta") {
+                rezultatTool = await this.executaIncasareCreanta(card.confirm.args);
               }
               card.confirm.stare = "confirmat";
 
@@ -3643,6 +4420,205 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               fixata: false,
             });
             return { rezultat: "Notiță creată.", id_nota: nota.id };
+          },
+
+          // ---------- PRODUSE: creare / editare / ștergere ----------
+          async executaProdusNou(args) {
+            if (!args.denumire_produs || !args.cod_site)
+              throw new Error("Denumirea și codul de site sunt obligatorii.");
+            const erpP = this.erpApp();
+            const idCompanie =
+              args.id_companie || (erpP && erpP.companii && erpP.companii[0] ? erpP.companii[0].id : "");
+            const nou = await this.pb.collection("base_product").create({
+              denumire_produs: args.denumire_produs,
+              cod_site: args.cod_site,
+              barcode: args.barcode || "",
+              id_companie: idCompanie,
+              stoc_actual: Number(args.stoc_actual) || 0,
+              pret_cost_mediu: Number(args.pret_cost_mediu) || 0,
+            });
+            return { rezultat: "Produs creat.", id_produs: nou.id };
+          },
+
+          async executaProdusEditare(args) {
+            if (!args.id_produs) throw new Error("Lipsește id_produs.");
+            const payload = {};
+            if (args.denumire_produs != null) payload.denumire_produs = args.denumire_produs;
+            if (args.cod_site != null) payload.cod_site = args.cod_site;
+            if (args.barcode != null) payload.barcode = args.barcode;
+            if (args.id_companie != null) payload.id_companie = args.id_companie;
+            if (args.stoc_actual != null) payload.stoc_actual = Number(args.stoc_actual);
+            if (args.pret_cost_mediu != null) payload.pret_cost_mediu = Number(args.pret_cost_mediu);
+            const actualizat = await this.pb.collection("base_product").update(args.id_produs, payload);
+            const local = this.produse.find((p) => p.id === args.id_produs);
+            if (local) {
+              if (payload.denumire_produs != null) local.nume = payload.denumire_produs;
+              if (payload.cod_site != null) local.cod_site = payload.cod_site;
+              if (payload.stoc_actual != null) local.stoc_actual = payload.stoc_actual;
+              if (payload.pret_cost_mediu != null) local.pret_cost_mediu = payload.pret_cost_mediu;
+            }
+            return { rezultat: "Produs actualizat.", id_produs: actualizat.id };
+          },
+
+          async executaProdusStergere(args) {
+            if (!args.id_produs) throw new Error("Lipsește id_produs.");
+            await this.pb.collection("base_product").delete(args.id_produs);
+            this.produse = this.produse.filter((p) => p.id !== args.id_produs);
+            return { rezultat: "Produs șters." };
+          },
+
+          // ---------- ACHIZIȚII: creare / editare / ștergere ----------
+          // Reutilizează aplicaProdusInStoc() din erpSystem() (actualizează stoc + CMP
+          // și creează flow_purchase_item), aceeași funcție folosită de recepția manuală
+          // din tab-ul Aprovizionare, ca logica să nu fie duplicată în două locuri.
+          async executaAchizitieNoua(args) {
+            const produseValide = (args.produse || []).filter(
+              (p) => p.id_produs && p.cantitate > 0 && p.pret_achizitie != null,
+            );
+            if (produseValide.length === 0) throw new Error("Nu există produse valide pentru achiziție.");
+            const erpA = this.erpApp();
+            if (!erpA) throw new Error("Aplicația principală nu este disponibilă momentan.");
+
+            const contCautat = args.nume_cont
+              ? this.conturi.find((c) => (c.nume_cont || "").toLowerCase().includes(args.nume_cont.toLowerCase()))
+              : null;
+            const contFinal =
+              contCautat || this.conturi.find((c) => c.tip_cont === "operativ") || this.conturi[0];
+            if (!contFinal) throw new Error("Nu există niciun cont disponibil.");
+
+            const taxa = Number(args.taxa_shopping) || 0;
+            const bonus = Number(args.bonus_site) || 0;
+            const totalProduse = produseValide.reduce((s, p) => s + p.cantitate * p.pret_achizitie, 0);
+            const totalGeneral = totalProduse + taxa - bonus;
+            const acum = new Date().toISOString();
+
+            const aInreg = await this.pb.collection("flow_purchase").create({
+              referinta_factura: args.referinta_factura,
+              id_cont_sursa: contFinal.id,
+              taxa_shopping: taxa,
+              bonus_site: bonus,
+              total_general: totalGeneral,
+              data_achizitie: acum,
+              descriere: args.descriere || "Creat de Asistent AI",
+              data_factura: args.data_factura || "",
+              stare: "primita",
+              tip_plata: "",
+              data_comanda: acum,
+              data_primire: acum,
+            });
+
+            for (const p of produseValide) {
+              await erpA.aplicaProdusInStoc(aInreg.id, {
+                id: p.id_produs,
+                cantitate: p.cantitate,
+                pret_achizitie: p.pret_achizitie,
+              });
+              const local = this.produse.find((x) => x.id === p.id_produs);
+              if (local) local.stoc_actual = (local.stoc_actual || 0) + p.cantitate;
+            }
+
+            await this.pb.collection("ledger_finance").create({
+              id_cont: contFinal.id,
+              suma: -totalGeneral,
+              tip_tranzactie: "achizitie",
+              descriere: `Achiziție factură: ${args.referinta_factura} (Asistent AI) [REF:${aInreg.id}]`,
+              data_tranzactie: acum,
+            });
+
+            return {
+              rezultat: "Achiziție înregistrată cu succes.",
+              id_achizitie: aInreg.id,
+              total_general: totalGeneral,
+            };
+          },
+
+          async executaAchizitieEditare(args) {
+            if (!args.id_achizitie) throw new Error("Lipsește id_achizitie.");
+            const payload = {};
+            if (args.referinta_factura != null) payload.referinta_factura = args.referinta_factura;
+            if (args.descriere != null) payload.descriere = args.descriere;
+            if (args.data_factura != null) payload.data_factura = args.data_factura;
+            if (args.stare != null) payload.stare = args.stare;
+            const actualizat = await this.pb.collection("flow_purchase").update(args.id_achizitie, payload);
+            return { rezultat: "Achiziție actualizată.", id_achizitie: actualizat.id };
+          },
+
+          async executaAchizitieStergere(args) {
+            if (!args.id_achizitie) throw new Error("Lipsește id_achizitie.");
+            await this.pb.collection("flow_purchase").delete(args.id_achizitie);
+            return {
+              rezultat:
+                "Achiziție ștearsă. Stocul și tranzacția din registru asociate NU au fost modificate automat - corectează-le manual dacă e nevoie.",
+            };
+          },
+
+          // ---------- REGISTRU FINANCIAR: creare / editare / ștergere ----------
+          async executaTranzactieRegistruNoua(args) {
+            const cont = this.conturi.find((c) =>
+              (c.nume_cont || "").toLowerCase().includes((args.nume_cont || "").toLowerCase()),
+            );
+            if (!cont) throw new Error("Contul specificat nu a fost găsit.");
+            const inreg = await this.pb.collection("ledger_finance").create({
+              id_cont: cont.id,
+              suma: Number(args.suma),
+              tip_tranzactie: args.tip_tranzactie,
+              descriere: args.descriere || "Adăugată de Asistent AI",
+              data_tranzactie: args.data_tranzactie || new Date().toISOString(),
+            });
+            return { rezultat: "Tranzacție înregistrată.", id_tranzactie: inreg.id };
+          },
+
+          async executaTranzactieRegistruEditare(args) {
+            if (!args.id_tranzactie) throw new Error("Lipsește id_tranzactie.");
+            const payload = {};
+            if (args.nume_cont) {
+              const cont = this.conturi.find((c) =>
+                (c.nume_cont || "").toLowerCase().includes(args.nume_cont.toLowerCase()),
+              );
+              if (cont) payload.id_cont = cont.id;
+            }
+            if (args.suma != null) payload.suma = Number(args.suma);
+            if (args.tip_tranzactie != null) payload.tip_tranzactie = args.tip_tranzactie;
+            if (args.descriere != null) payload.descriere = args.descriere;
+            if (args.data_tranzactie != null) payload.data_tranzactie = args.data_tranzactie;
+            const actualizat = await this.pb.collection("ledger_finance").update(args.id_tranzactie, payload);
+            return { rezultat: "Tranzacție actualizată.", id_tranzactie: actualizat.id };
+          },
+
+          async executaTranzactieRegistruStergere(args) {
+            if (!args.id_tranzactie) throw new Error("Lipsește id_tranzactie.");
+            await this.pb.collection("ledger_finance").delete(args.id_tranzactie);
+            return { rezultat: "Tranzacție ștearsă." };
+          },
+
+          // ---------- CREANȚE: încasare ----------
+          async executaIncasareCreanta(args) {
+            const erpI = this.erpApp();
+            if (!erpI) throw new Error("Aplicația principală nu este disponibilă momentan.");
+            let creanta = args.id_creanta
+              ? (erpI.datornici || []).find((d) => d.id === args.id_creanta)
+              : null;
+            if (!creanta && args.nume_client) {
+              const q = args.nume_client.toLowerCase();
+              creanta = (erpI.datornici || []).find((d) => (d.client_nume || "").toLowerCase().includes(q));
+            }
+            if (!creanta) throw new Error("Nu am găsit o creanță activă care să corespundă.");
+            const suma = Number(args.suma);
+            if (!suma || suma <= 0) throw new Error("Suma trebuie să fie pozitivă.");
+            const contCautat = args.nume_cont
+              ? this.conturi.find((c) => (c.nume_cont || "").toLowerCase().includes(args.nume_cont.toLowerCase()))
+              : null;
+            const contFinal =
+              contCautat || this.conturi.find((c) => c.tip_cont === "operativ") || this.conturi[0];
+            if (!contFinal) throw new Error("Nu există niciun cont disponibil.");
+            await this.pb.collection("ledger_finance").create({
+              id_cont: contFinal.id,
+              suma: suma,
+              tip_tranzactie: "incasare_creanta",
+              descriere: `Încasare creanță: ${creanta.client_nume} (Asistent AI) [REF:${creanta.id}]`,
+              data_tranzactie: new Date().toISOString(),
+            });
+            return { rezultat: "Încasare înregistrată.", client: creanta.client_nume, suma };
           },
         };
       }
@@ -3775,104 +4751,47 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             </div>
           </div>
 
-          <!-- STATISTICI RAPIDE -->
-          <div class="grid grid-cols-2 gap-3">
-            <div class="glass-panel p-4 rounded-[24px]">
-              <div class="flex items-center gap-1.5">
-                <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" :class="stats.profit >= 0 ? 'bg-teal-400' : 'bg-rose-400'">
-                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33" /></svg>
-                </div>
-                <span
-                  class="text-slate-400 text-[9px] font-bold uppercase tracking-wider"
-                  >Profit Net (Încasat)</span
-                >
-              </div>
-              <p
-                class="text-lg font-bold mt-2"
-                :class="stats.profit >= 0 ? 'text-teal-500' : 'text-rose-500'"
-                x-text="formatLei(stats.profit)"
-              ></p>
-            </div>
-            <div
-              class="glass-panel p-4 rounded-[24px] bg-gradient-to-br from-amber-50/50 to-orange-50/50"
-            >
-              <div class="flex items-center gap-1.5">
-                <div class="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <span
-                  class="text-slate-400 text-[9px] font-bold uppercase tracking-wider"
-                  >Creanțe Neîncasate</span
-                >
-              </div>
-              <p
-                class="text-lg font-bold text-amber-600 mt-2"
-                x-text="formatLei(totalCreanteNeincasate())"
-              ></p>
-            </div>
-            <div class="glass-panel p-4 rounded-[24px]">
-              <div class="flex items-center gap-1.5">
-                <div class="w-6 h-6 rounded-full bg-rose-400 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 1.87-4.7 2.279-7.166a1.125 1.125 0 00-1.11-1.318H5.25M7.5 14.25L5.106 5.272M7.5 14.25L4.5 10.5" /></svg>
-                </div>
-                <span
-                  class="text-slate-400 text-[9px] font-bold uppercase tracking-wider"
-                  >Total Vânzări Cash</span
-                >
-              </div>
-              <p
-                class="text-sm font-bold mt-2 text-slate-700"
-                x-text="formatLei(stats.vanzari)"
-              ></p>
-            </div>
-            <div class="glass-panel p-4 rounded-[24px]">
-              <div class="flex items-center gap-1.5">
-                <div class="w-6 h-6 rounded-full bg-sky-400 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
-                </div>
-                <span
-                  class="text-slate-400 text-[9px] font-bold uppercase tracking-wider"
-                  >Total Achiziții Cash</span
-                >
-              </div>
-              <p
-                class="text-sm font-bold mt-2 text-slate-700"
-                x-text="formatLei(stats.achizitii)"
-              ></p>
-            </div>
-          </div>
-
           <!-- STATISTICI PE PERIOADĂ + COMPANIE -->
           <div class="glass-panel p-4 rounded-3xl space-y-6">
-            <button
-              @click="dashboardFiltersOpen = !dashboardFiltersOpen"
-              class="w-full flex justify-between items-center"
-            >
+            <div class="w-full flex justify-between items-center">
               <h3
                 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest"
               >
                 Statistici Analitice
               </h3>
-              <span
-                class="flex items-center gap-1.5 text-[9px] font-bold text-rose-400 uppercase"
-              >
-                Filtre
-                <svg
-                  class="w-3 h-3 transition-transform"
-                  :class="dashboardFiltersOpen ? 'rotate-180' : ''"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  viewBox="0 0 24 24"
+              <div class="flex items-center gap-3">
+                <button
+                  type="button"
+                  @click="descarcaDashboardPDF()"
+                  title="Descarcă raport PDF cu statisticile, graficul și topurile de mai jos"
+                  class="flex items-center gap-1 text-[9px] font-bold text-teal-500 uppercase"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </span>
-            </button>
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  @click="dashboardFiltersOpen = !dashboardFiltersOpen"
+                  class="flex items-center gap-1.5 text-[9px] font-bold text-rose-400 uppercase"
+                >
+                  Filtre
+                  <svg
+                    class="w-3 h-3 transition-transform"
+                    :class="dashboardFiltersOpen ? 'rotate-180' : ''"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
             <div
               x-show="dashboardFiltersOpen"
@@ -3985,57 +4904,57 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-3 gap-2.5">
               <div
-                class="bg-white/50 p-3.5 rounded-2xl text-center border border-white/60"
+                class="bg-gradient-to-b from-teal-50/70 to-white/40 p-3.5 rounded-[20px] text-center border border-teal-100/70"
               >
-                <p class="text-[8px] text-slate-400 uppercase font-bold">
+                <p class="text-[7.5px] text-teal-500/70 uppercase font-bold tracking-wide">
                   Vânzări
                 </p>
                 <p
-                  class="text-[11px] font-bold text-teal-600 mt-1.5"
+                  class="text-[12px] font-extrabold text-teal-600 mt-1.5 tracking-tight"
                   x-text="formatLei(getDashboardStats().vanzari)"
                 ></p>
                 <p
                   x-show="getTrendPct('vanzari') !== null"
-                  class="text-[8px] font-bold mt-1.5"
+                  class="text-[7.5px] font-bold mt-1.5"
                   :class="getTrendPct('vanzari') >= 0 ? 'text-teal-500' : 'text-rose-500'"
-                  x-text="(getTrendPct('vanzari') >= 0 ? '▲ ' : '▼ ') + Math.abs(getTrendPct('vanzari') || 0).toFixed(0) + '% vs anterior'"
+                  x-text="(getTrendPct('vanzari') >= 0 ? '▲ ' : '▼ ') + Math.abs(getTrendPct('vanzari') || 0).toFixed(0) + '%'"
                 ></p>
               </div>
               <div
-                class="bg-white/50 p-3.5 rounded-2xl text-center border border-white/60"
+                class="bg-gradient-to-b from-rose-50/70 to-white/40 p-3.5 rounded-[20px] text-center border border-rose-100/70"
               >
-                <p class="text-[8px] text-slate-400 uppercase font-bold">
+                <p class="text-[7.5px] text-rose-400/80 uppercase font-bold tracking-wide">
                   Achiziții
                 </p>
                 <p
-                  class="text-[11px] font-bold text-rose-500 mt-1.5"
+                  class="text-[12px] font-extrabold text-rose-500 mt-1.5 tracking-tight"
                   x-text="formatLei(getDashboardStats().achizitii)"
                 ></p>
                 <p
                   x-show="getTrendPct('achizitii') !== null"
-                  class="text-[8px] font-bold mt-1.5"
+                  class="text-[7.5px] font-bold mt-1.5"
                   :class="getTrendPct('achizitii') >= 0 ? 'text-amber-500' : 'text-teal-500'"
-                  x-text="(getTrendPct('achizitii') >= 0 ? '▲ ' : '▼ ') + Math.abs(getTrendPct('achizitii') || 0).toFixed(0) + '% vs anterior'"
+                  x-text="(getTrendPct('achizitii') >= 0 ? '▲ ' : '▼ ') + Math.abs(getTrendPct('achizitii') || 0).toFixed(0) + '%'"
                 ></p>
               </div>
               <div
-                class="bg-white/50 p-3.5 rounded-2xl text-center border border-white/60"
+                class="bg-gradient-to-b from-slate-50/70 to-white/40 p-3.5 rounded-[20px] text-center border border-slate-200/70"
               >
-                <p class="text-[8px] text-slate-400 uppercase font-bold">
+                <p class="text-[7.5px] text-slate-400 uppercase font-bold tracking-wide">
                   Profit
                 </p>
                 <p
-                  class="text-[11px] font-bold mt-1.5"
+                  class="text-[12px] font-extrabold mt-1.5 tracking-tight"
                   :class="getDashboardStats().profit >= 0 ? 'text-teal-600' : 'text-rose-500'"
                   x-text="formatLei(getDashboardStats().profit)"
                 ></p>
                 <p
                   x-show="getTrendPct('profit') !== null"
-                  class="text-[8px] font-bold mt-1.5"
+                  class="text-[7.5px] font-bold mt-1.5"
                   :class="getTrendPct('profit') >= 0 ? 'text-teal-500' : 'text-rose-500'"
-                  x-text="(getTrendPct('profit') >= 0 ? '▲ ' : '▼ ') + Math.abs(getTrendPct('profit') || 0).toFixed(0) + '% vs anterior'"
+                  x-text="(getTrendPct('profit') >= 0 ? '▲ ' : '▼ ') + Math.abs(getTrendPct('profit') || 0).toFixed(0) + '%'"
                 ></p>
               </div>
             </div>
@@ -4046,7 +4965,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               Comparativ cu perioada anterioară de aceeași durată
             </p>
 
-            <!-- Grafic Evoluție (bare CSS, robuste, dinamice după filtrul de perioadă) -->
+            <!-- Grafic Evoluție (arie/linie SVG netedă, stil iOS premium - înlocuiește vechile bare CSS) -->
             <div class="pt-2 border-t border-slate-200/50">
               <div class="flex justify-between items-baseline mb-2 mt-1">
                 <p
@@ -4059,67 +4978,102 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 ></p>
               </div>
               <p class="text-[8px] text-slate-400 text-center mb-3 italic">
-                Fiecare pereche de bare arată vânzările (verde) și
-                achizițiile (roz) din acea zi/lună — cu cât bara e mai
-                înaltă, cu atât suma e mai mare.
+                Evoluția vânzărilor (verde) și achizițiilor (roz) din
+                perioada selectată — atinge un punct pe grafic pentru suma
+                exactă.
               </p>
-              <div class="pb-1 pt-4 relative">
-                <!-- Linii de referință orizontale (grilă) pentru a citi mai ușor înălțimea barelor -->
-                <div class="absolute inset-0 h-48 flex flex-col justify-between pointer-events-none">
-                  <div class="border-t border-dashed border-slate-200/80 w-full"></div>
-                  <div class="border-t border-dashed border-slate-200/80 w-full"></div>
-                  <div class="border-t border-dashed border-slate-200/60 w-full"></div>
+
+              <div
+                class="relative rounded-[26px] bg-gradient-to-b from-slate-50/80 to-white/30 border border-white/70 pt-5 px-2 pb-2 overflow-hidden"
+              >
+                <!-- Linii de referință orizontale (grilă), pentru a citi mai ușor curba -->
+                <div
+                  class="absolute left-2 right-2 top-5 bottom-8 flex flex-col justify-between pointer-events-none"
+                >
+                  <div class="border-t border-dashed border-slate-200/70 w-full"></div>
+                  <div class="border-t border-dashed border-slate-200/70 w-full"></div>
+                  <div class="border-t border-dashed border-slate-200/50 w-full"></div>
                 </div>
-                <div class="flex items-end gap-1 h-48 w-full relative">
-                  <template x-for="(m, idx) in getChartData()" :key="m.key">
-                    <div
-                      class="flex flex-col items-center gap-1.5 h-full justify-end min-w-0"
-                      style="flex: 1 1 0%; max-width: 42px"
-                    >
-                      <div
-                        class="w-full flex items-end justify-center h-full relative"
-                        :class="getChartData().length > 20 ? 'gap-0.5' : 'gap-1'"
-                      >
-                        <template x-if="getChartData().length <= 10 && (m.vanzari > 0 || m.achizitii > 0)">
-                          <span
-                            class="absolute left-1/2 -translate-x-1/2 text-[6px] font-bold text-slate-500 whitespace-nowrap bg-white/80 px-1 rounded"
-                            :style="'bottom: calc(' + Math.max(barPct(m.vanzari), barPct(m.achizitii)) + '% + 5px)'"
-                            x-text="formatLei(Math.max(m.vanzari, m.achizitii))"
-                          ></span>
-                        </template>
-                        <div
-                          class="rounded-t-full bg-gradient-to-t from-teal-500 to-teal-300 shadow-sm transition-all duration-500"
-                          :class="getChartData().length > 20 ? 'w-1.5' : 'w-3'"
-                          :style="'height:' + barPct(m.vanzari) + '%'"
-                          :title="'Vânzări: ' + formatLei(m.vanzari)"
-                        ></div>
-                        <div
-                          class="rounded-t-full bg-gradient-to-t from-rose-500 to-rose-300 shadow-sm transition-all duration-500"
-                          :class="getChartData().length > 20 ? 'w-1.5' : 'w-3'"
-                          :style="'height:' + barPct(m.achizitii) + '%'"
-                          :title="'Achiziții: ' + formatLei(m.achizitii)"
-                        ></div>
-                      </div>
-                      <span
-                        class="text-[7px] text-slate-400 font-bold uppercase whitespace-nowrap"
-                        x-text="getChartData().length > 15 && idx % 2 === 1 ? '' : m.label"
-                      ></span>
-                    </div>
+
+                <svg
+                  :viewBox="'0 0 ' + getChartSvgData().w + ' ' + getChartSvgData().h"
+                  preserveAspectRatio="none"
+                  class="w-full h-40 relative block"
+                >
+                  <defs>
+                    <linearGradient id="gradVanzariArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.4" />
+                      <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0" />
+                    </linearGradient>
+                    <linearGradient id="gradAchizitiiArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#fb7185" stop-opacity="0.32" />
+                      <stop offset="100%" stop-color="#fb7185" stop-opacity="0" />
+                    </linearGradient>
+                    <linearGradient id="gradVanzariLine" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#0d9488" />
+                      <stop offset="100%" stop-color="#5eead4" />
+                    </linearGradient>
+                    <linearGradient id="gradAchizitiiLine" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#e11d48" />
+                      <stop offset="100%" stop-color="#fda4af" />
+                    </linearGradient>
+                  </defs>
+
+                  <path :d="getChartSvgData().achizitiiArea" fill="url(#gradAchizitiiArea)"></path>
+                  <path :d="getChartSvgData().vanzariArea" fill="url(#gradVanzariArea)"></path>
+
+                  <path
+                    :d="getChartSvgData().achizitiiLine"
+                    fill="none"
+                    stroke="url(#gradAchizitiiLine)"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                  <path
+                    :d="getChartSvgData().vanzariLine"
+                    fill="none"
+                    stroke="url(#gradVanzariLine)"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+
+                  <template x-for="(p, idx) in getChartSvgData().pointsV" :key="'pv-' + idx">
+                    <circle :cx="p.x" :cy="p.y" r="2.4" fill="#0d9488" stroke="white" stroke-width="1.1">
+                      <title x-text="'Vânzări: ' + formatLei(p.v)"></title>
+                    </circle>
+                  </template>
+                  <template x-for="(p, idx) in getChartSvgData().pointsA" :key="'pa-' + idx">
+                    <circle :cx="p.x" :cy="p.y" r="2.4" fill="#e11d48" stroke="white" stroke-width="1.1">
+                      <title x-text="'Achiziții: ' + formatLei(p.v)"></title>
+                    </circle>
+                  </template>
+                </svg>
+
+                <!-- Etichete X (zi/lună), aliniate sub grafic -->
+                <div class="flex justify-between mt-1 px-0.5">
+                  <template x-for="(m, idx) in getChartData()" :key="'lbl-' + m.key">
+                    <span
+                      class="text-[6.5px] text-slate-400 font-bold uppercase flex-1 text-center truncate"
+                      x-text="getChartData().length > 15 && idx % 2 === 1 ? '' : m.label"
+                    ></span>
                   </template>
                 </div>
               </div>
+
               <div
                 class="flex justify-center gap-4 text-[8px] text-slate-400 mt-4"
               >
-                <span class="flex items-center gap-1"
+                <span class="flex items-center gap-1.5"
                   ><span
-                    class="w-2 h-2 rounded-full bg-teal-400 inline-block"
+                    class="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 inline-block shadow-sm"
                   ></span>
                   Vânzări</span
                 >
-                <span class="flex items-center gap-1"
+                <span class="flex items-center gap-1.5"
                   ><span
-                    class="w-2 h-2 rounded-full bg-rose-400 inline-block"
+                    class="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-rose-400 to-rose-500 inline-block shadow-sm"
                   ></span>
                   Achiziții</span
                 >
@@ -4225,12 +5179,36 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   (cifrele din dreapta) aduce fiecare companie/furnizor.
                 </p>
                 <div class="flex items-center gap-5">
-                  <div
-                    class="relative w-24 h-24 rounded-full flex-shrink-0"
-                    :style="getCompanyDonutStyle()"
-                  >
+                  <div class="relative w-24 h-24 flex-shrink-0 drop-shadow-sm">
+                    <svg viewBox="0 0 100 100" class="w-24 h-24 -rotate-90">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="#eef2f7"
+                        stroke-width="11"
+                      ></circle>
+                      <template
+                        x-for="(seg, idx) in getCompanyDonutSegments()"
+                        :key="'donut-' + idx"
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="none"
+                          :stroke="seg.color"
+                          stroke-width="11"
+                          stroke-linecap="round"
+                          :stroke-dasharray="seg.dasharray"
+                          :stroke-dashoffset="seg.dashoffset"
+                          class="transition-all duration-700 ease-out"
+                        ></circle>
+                      </template>
+                    </svg>
                     <div
-                      class="absolute inset-[8px] bg-white/90 rounded-full flex flex-col items-center justify-center"
+                      class="absolute inset-0 flex flex-col items-center justify-center"
                     >
                       <span
                         class="text-[7px] text-slate-400 uppercase font-bold"
@@ -4275,6 +5253,94 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 </div>
               </div>
             </template>
+          </div>
+
+          <!-- STATISTICI RAPIDE (stil iOS premium: carduri aerisite, iconițe cu glow, tipografie mai apăsată) -->
+          <div class="grid grid-cols-2 gap-3">
+            <div
+              class="relative p-4 rounded-[26px] overflow-hidden border border-white/70"
+              :class="stats.profit >= 0 ? 'bg-gradient-to-br from-teal-50/80 via-white to-white' : 'bg-gradient-to-br from-rose-50/80 via-white to-white'"
+              style="box-shadow: 0 8px 24px -10px rgba(100,116,139,0.14)"
+            >
+              <div
+                class="absolute -right-4 -top-4 w-16 h-16 rounded-full blur-2xl opacity-40"
+                :class="stats.profit >= 0 ? 'bg-teal-300' : 'bg-rose-300'"
+              ></div>
+              <div class="relative flex items-center gap-2">
+                <div
+                  class="w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                  :class="stats.profit >= 0 ? 'bg-gradient-to-br from-teal-400 to-teal-500' : 'bg-gradient-to-br from-rose-400 to-rose-500'"
+                >
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33" /></svg>
+                </div>
+                <span
+                  class="text-slate-400 text-[8.5px] font-bold uppercase tracking-wider leading-tight"
+                  >Profit Net<br />(Încasat)</span
+                >
+              </div>
+              <p
+                class="relative text-xl font-extrabold mt-3 tracking-tight"
+                :class="stats.profit >= 0 ? 'text-teal-500' : 'text-rose-500'"
+                x-text="formatLei(stats.profit)"
+              ></p>
+            </div>
+            <div
+              class="relative p-4 rounded-[26px] overflow-hidden border border-white/70 bg-gradient-to-br from-amber-50/80 via-white to-white"
+              style="box-shadow: 0 8px 24px -10px rgba(100,116,139,0.14)"
+            >
+              <div
+                class="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-amber-300 blur-2xl opacity-40"
+              ></div>
+              <div class="relative flex items-center gap-2">
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <span
+                  class="text-slate-400 text-[8.5px] font-bold uppercase tracking-wider leading-tight"
+                  >Creanțe<br />Neîncasate</span
+                >
+              </div>
+              <p
+                class="relative text-xl font-extrabold text-amber-600 mt-3 tracking-tight"
+                x-text="formatLei(totalCreanteNeincasate())"
+              ></p>
+            </div>
+            <div
+              class="relative p-4 rounded-[26px] overflow-hidden border border-white/70 bg-gradient-to-br from-slate-50/80 via-white to-white"
+              style="box-shadow: 0 8px 24px -10px rgba(100,116,139,0.14)"
+            >
+              <div class="relative flex items-center gap-2">
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-rose-400 to-rose-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 1.87-4.7 2.279-7.166a1.125 1.125 0 00-1.11-1.318H5.25M7.5 14.25L5.106 5.272M7.5 14.25L4.5 10.5" /></svg>
+                </div>
+                <span
+                  class="text-slate-400 text-[8.5px] font-bold uppercase tracking-wider leading-tight"
+                  >Total Vânzări<br />Cash</span
+                >
+              </div>
+              <p
+                class="relative text-base font-extrabold mt-3 text-slate-700 tracking-tight"
+                x-text="formatLei(stats.vanzari)"
+              ></p>
+            </div>
+            <div
+              class="relative p-4 rounded-[26px] overflow-hidden border border-white/70 bg-gradient-to-br from-sky-50/80 via-white to-white"
+              style="box-shadow: 0 8px 24px -10px rgba(100,116,139,0.14)"
+            >
+              <div class="relative flex items-center gap-2">
+                <div class="w-8 h-8 rounded-2xl bg-gradient-to-br from-sky-400 to-sky-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                </div>
+                <span
+                  class="text-slate-400 text-[8.5px] font-bold uppercase tracking-wider leading-tight"
+                  >Total Achiziții<br />Cash</span
+                >
+              </div>
+              <p
+                class="relative text-base font-extrabold mt-3 text-slate-700 tracking-tight"
+                x-text="formatLei(stats.achizitii)"
+              ></p>
+            </div>
           </div>
 
           <!-- FLUX DE BANI PE CONTURI (intrări/ieșiri, pentru aceeași perioadă selectată mai sus) -->
@@ -4435,6 +5501,309 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               </template>
             </div>
           </div>
+
+          <!-- Bară decorativă despărțitoare: de aici încolo, câte o bucățică din fiecare tab -->
+          <div class="flex items-center gap-3 py-1">
+            <div class="flex-1 h-px bg-gradient-to-r from-transparent to-slate-300"></div>
+            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
+              <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" /></svg>
+              Pe scurt, din fiecare tab
+            </span>
+            <div class="flex-1 h-px bg-gradient-to-l from-transparent to-slate-300"></div>
+          </div>
+
+          <!-- STOC & REAPROVIZIONARE (instantaneu din tab-ul Stoc) -->
+          <div class="glass-panel rounded-3xl p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3
+                class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest"
+              >
+                Stoc &amp; Reaprovizionare
+              </h3>
+              <button
+                @click="activeTab = 'stoc'"
+                class="text-[9px] font-bold text-rose-400 uppercase"
+              >
+                Gestionează
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div
+                class="bg-gradient-to-b from-teal-50/70 to-white/40 p-3 rounded-2xl text-center border border-teal-100/70"
+              >
+                <p class="text-[7.5px] text-teal-500/70 uppercase font-bold tracking-wide">
+                  Valoare Stoc
+                </p>
+                <p
+                  class="text-[12px] font-extrabold text-teal-600 mt-1.5 tracking-tight"
+                  x-text="formatLei(getStocSnapshotDashboard().valoareTotala)"
+                ></p>
+              </div>
+              <div
+                class="bg-gradient-to-b from-amber-50/70 to-white/40 p-3 rounded-2xl text-center border border-amber-100/70"
+              >
+                <p class="text-[7.5px] text-amber-500/80 uppercase font-bold tracking-wide">
+                  De Reaprovizionat
+                </p>
+                <p
+                  class="text-[12px] font-extrabold text-amber-600 mt-1.5 tracking-tight"
+                  x-text="(getStocSnapshotDashboard().epuizate.length + getStocSnapshotDashboard().stocRedus.length) + ' produse'"
+                ></p>
+              </div>
+            </div>
+            <div class="space-y-2" x-show="getStocSnapshotDashboard().listaAfisata.length > 0" x-cloak>
+              <template x-for="p in getStocSnapshotDashboard().listaAfisata" :key="p.id">
+                <div
+                  class="flex items-center justify-between gap-2 bg-white/50 p-2.5 rounded-2xl border border-white/60"
+                >
+                  <span
+                    class="text-[10px] font-semibold text-slate-600 truncate max-w-[65%]"
+                    x-text="p.denumire_produs"
+                  ></span>
+                  <span
+                    class="text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                    :class="p.stoc_actual <= 0 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'"
+                    x-text="p.stoc_actual <= 0 ? 'Stoc 0' : p.stoc_actual + ' buc'"
+                  ></span>
+                </div>
+              </template>
+            </div>
+            <p
+              x-show="getStocSnapshotDashboard().listaAfisata.length === 0"
+              class="text-[11px] text-slate-400 text-center py-2 italic"
+            >
+              Tot stocul e la un nivel sănătos.
+            </p>
+          </div>
+
+          <!-- MARFĂ ÎN TRANZIT (instantaneu din tab-ul Tranzit) -->
+          <template x-if="getTranzitSnapshotDashboard().nrComenzi > 0">
+            <div class="glass-panel rounded-3xl p-4 space-y-3">
+              <div class="flex justify-between items-center">
+                <h3
+                  class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest"
+                >
+                  Marfă în Tranzit
+                </h3>
+                <button
+                  @click="activeTab = 'tranzit'"
+                  class="text-[9px] font-bold text-rose-400 uppercase"
+                >
+                  Vezi tot
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div
+                  class="bg-gradient-to-b from-sky-50/70 to-white/40 p-3 rounded-2xl text-center border border-sky-100/70"
+                >
+                  <p class="text-[7.5px] text-sky-500/80 uppercase font-bold tracking-wide">
+                    Comenzi pe drum
+                  </p>
+                  <p
+                    class="text-[12px] font-extrabold text-sky-600 mt-1.5 tracking-tight"
+                    x-text="getTranzitSnapshotDashboard().nrComenzi"
+                  ></p>
+                </div>
+                <div
+                  class="bg-gradient-to-b from-slate-50/70 to-white/40 p-3 rounded-2xl text-center border border-slate-200/70"
+                >
+                  <p class="text-[7.5px] text-slate-400 uppercase font-bold tracking-wide">
+                    Valoare
+                  </p>
+                  <p
+                    class="text-[12px] font-extrabold text-slate-700 mt-1.5 tracking-tight"
+                    x-text="formatLei(getTranzitSnapshotDashboard().valoareTotala)"
+                  ></p>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <template x-for="cmd in getTranzitSnapshotDashboard().listaAfisata" :key="cmd.id">
+                  <div
+                    class="flex items-center justify-between gap-2 bg-white/50 p-2.5 rounded-2xl border border-white/60"
+                  >
+                    <span class="min-w-0">
+                      <span
+                        class="block text-[10px] font-semibold text-slate-600 truncate"
+                        x-text="companii.find(c => c.id === cmd.id_companie)?.nume_companie || '—'"
+                      ></span>
+                      <span
+                        class="block text-[8px] text-slate-400"
+                        x-text="'De ' + zileDeLaComanda(cmd) + (zileDeLaComanda(cmd) === 1 ? ' zi' : ' zile') + ' pe drum'"
+                      ></span>
+                    </span>
+                    <span
+                      class="text-[9px] font-bold text-slate-600 flex-shrink-0"
+                      x-text="formatLeiPrecis(cmd.total_general || 0)"
+                    ></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- ACTIVITATE RECENTĂ (ultimele mișcări din Registru) -->
+          <div class="glass-panel rounded-3xl p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3
+                class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest"
+              >
+                Activitate Recentă
+              </h3>
+              <button
+                @click="activeTab = 'registru'"
+                class="text-[9px] font-bold text-rose-400 uppercase"
+              >
+                Vezi Registrul
+              </button>
+            </div>
+            <div class="space-y-2">
+              <template x-for="t in getActivitateRecentaDashboard()" :key="t.id">
+                <button
+                  type="button"
+                  @click="deschideDetaliuRegistru(t)"
+                  class="w-full text-left flex items-center justify-between gap-2 bg-white/50 p-2.5 rounded-2xl border border-white/60 active:scale-[0.98] transition"
+                >
+                  <span class="min-w-0 flex items-center gap-2">
+                    <span
+                      class="text-[7px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0"
+                      x-text="getTipTranzactieLabel(t.tip_tranzactie)"
+                    ></span>
+                    <span
+                      class="text-[10px] font-medium text-slate-700 truncate"
+                      x-text="t.descriere ? t.descriere.replace(/\[REF:[^\]]+\]/g,'').trim() : 'Tranzacție fără descriere'"
+                    ></span>
+                  </span>
+                  <span
+                    class="text-[10px] font-semibold flex-shrink-0"
+                    :class="t.suma < 0 ? 'text-rose-500' : 'text-teal-600'"
+                    x-text="(t.suma > 0 ? '+' : '') + formatLei(t.suma)"
+                  ></span>
+                </button>
+              </template>
+              <p
+                x-show="getActivitateRecentaDashboard().length === 0"
+                class="text-[11px] text-slate-400 text-center py-2 italic"
+              >
+                Nicio mișcare înregistrată încă.
+              </p>
+            </div>
+          </div>
+
+          <!-- RAPOARTE & EXPORTURI (consolidate din Dashboard, Registru și Clienți) -->
+          <div class="glass-panel rounded-3xl p-4 space-y-4">
+            <h3
+              class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest"
+            >
+              Rapoarte &amp; Exporturi
+            </h3>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] text-slate-500 font-semibold"
+                  >Raport perioadă selectată mai sus</span
+                >
+                <button
+                  @click="descarcaDashboardPDF()"
+                  class="flex items-center gap-1 bg-teal-500 hover:bg-teal-600 text-white text-[9px] font-bold uppercase px-3 py-2 rounded-xl transition flex-shrink-0"
+                >
+                  PDF
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <input
+                  type="month"
+                  x-model="statisticaLuna"
+                  class="flex-1 glass-input rounded-xl p-2 text-[10px] text-slate-700"
+                />
+                <button
+                  @click="descarcaStatisticaLunaraPDF()"
+                  class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-2 rounded-xl font-bold text-[9px] uppercase tracking-widest transition flex-shrink-0"
+                >
+                  Raport Lunar
+                </button>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-200/60 pt-3 space-y-2">
+              <label class="text-[8px] text-slate-400 uppercase block font-bold"
+                >Extras cont client</label
+              >
+              <div class="flex gap-2">
+                <div
+                  class="relative flex-1"
+                  x-data="{ open: false }"
+                  :class="open ? 'z-30' : ''"
+                >
+                  <button
+                    type="button"
+                    @click="open = !open"
+                    class="ios-select-trigger glass-input rounded-xl p-2 text-[10px] text-slate-700 w-full"
+                  >
+                    <span
+                      x-text="clienti.find(c => c.id === dashboardClientExtrasId)?.nume || 'Alege clientul'"
+                    ></span>
+                    <svg
+                      class="w-3 h-3 text-slate-400 transition-transform flex-shrink-0"
+                      :class="open ? 'rotate-180' : ''"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  <div
+                    x-show="open"
+                    x-cloak
+                    @click.outside="open=false"
+                    x-transition
+                    class="ios-select-sheet ios-menu"
+                  >
+                    <template x-for="c in clienti" :key="c.id">
+                      <button
+                        type="button"
+                        @click="dashboardClientExtrasId=c.id; open=false"
+                        class="ios-menu-item"
+                      >
+                        <span class="truncate" x-text="c.nume"></span>
+                        <svg
+                          x-show="dashboardClientExtrasId===c.id"
+                          class="w-3.5 h-3.5 text-rose-500 flex-shrink-0"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.7 5.3a1 1 0 010 1.4l-7.4 7.4a1 1 0 01-1.4 0L3.3 9.5a1 1 0 111.4-1.4l3.6 3.6 6.7-6.7a1 1 0 011.4 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </template>
+                    <template x-if="clienti.length === 0">
+                      <p class="text-[10px] text-slate-400 text-center py-3 italic">
+                        Niciun client încă.
+                      </p>
+                    </template>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  @click="descarcaExtrasClientPDF(dashboardClientExtrasId)"
+                  :disabled="!dashboardClientExtrasId"
+                  class="bg-slate-800 hover:bg-slate-900 disabled:opacity-40 disabled:pointer-events-none text-white px-3.5 rounded-xl font-bold text-[9px] uppercase tracking-widest transition flex-shrink-0"
+                >
+                  PDF
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- TAB: STOCURI -->
@@ -4450,10 +5819,60 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             >
               Management Stocuri
             </h2>
-            <span
-              class="text-[10px] font-bold bg-teal-50 border border-teal-100 text-teal-600 px-2.5 py-1 rounded-full"
-              x-text="produseStocDisponibil.filter(x => !stocFilterCompanie || x.id_companie === stocFilterCompanie).length + ' Tipuri Produs'"
-            ></span>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <button
+                type="button"
+                @click="stocFiltruDeschis = !stocFiltruDeschis"
+                class="filtru-link"
+                :class="stocFiltruDeschis || stocSortare !== 'implicit' || stocFilterCompanie ? 'text-teal-600' : 'text-slate-400'"
+              >
+                Filtre
+                <svg class="w-2.5 h-2.5 transition-transform" :class="stocFiltruDeschis ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <span
+                class="text-[10px] font-bold bg-teal-50 border border-teal-100 text-teal-600 px-2.5 py-1 rounded-full"
+                x-text="produseStocFiltrate.length + ' Tipuri Produs'"
+              ></span>
+            </div>
+          </div>
+
+          <!-- Panou filtre - se desface la cerere, chiar sub titlu, peste conținut -->
+          <div x-show="stocFiltruDeschis" x-collapse x-cloak class="space-y-2 px-1">
+            <div class="flex flex-wrap gap-1.5">
+              <template x-for="opt in [
+                { val: 'implicit', label: 'Implicit' },
+                { val: 'alfabetic', label: 'Alfabetic (A-Z)' },
+                { val: 'stoc_asc', label: 'Stoc scăzut primul' },
+                { val: 'valoare_desc', label: 'Valoare totală' },
+              ]" :key="opt.val">
+                <button
+                  type="button"
+                  @click="stocSortare = opt.val"
+                  class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                  :class="stocSortare === opt.val ? 'bg-teal-500 text-white border-teal-500' : 'bg-white/70 text-slate-500 border-slate-200'"
+                  x-text="opt.label"
+                ></button>
+              </template>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                @click="stocFilterCompanie=''"
+                class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                :class="!stocFilterCompanie ? 'bg-slate-800 text-white border-slate-800' : 'bg-white/70 text-slate-500 border-slate-200'"
+              >
+                Toate companiile
+              </button>
+              <template x-for="c in companii" :key="c.id">
+                <button
+                  type="button"
+                  @click="stocFilterCompanie=c.id"
+                  class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                  :class="stocFilterCompanie===c.id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white/70 text-slate-500 border-slate-200'"
+                  x-text="c.nume_companie"
+                ></button>
+              </template>
+            </div>
           </div>
 
           <div class="glass-panel p-3 rounded-2xl flex gap-2">
@@ -4494,32 +5913,10 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               </svg>
             </button>
           </div>
-          <div class="glass-panel p-2.5 rounded-2xl relative" x-data="{ open: false }" :class="open ? 'z-30' : ''">
-            <button
-              type="button"
-              @click="open = !open"
-              class="ios-select-trigger glass-input rounded-xl p-2 text-[11px] text-slate-700"
-            >
-              <span x-text="companii.find(c => c.id === stocFilterCompanie)?.nume_companie || 'Toate companiile'"></span>
-              <svg class="w-3 h-3 text-slate-400 transition-transform flex-shrink-0" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div x-show="open" x-cloak @click.outside="open=false" x-transition class="ios-select-sheet ios-menu mx-2.5">
-              <button type="button" @click="stocFilterCompanie=''; open=false" class="ios-menu-item">
-                <span>Toate companiile</span>
-                <svg x-show="!stocFilterCompanie" class="w-3.5 h-3.5 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.4 7.4a1 1 0 01-1.4 0L3.3 9.5a1 1 0 111.4-1.4l3.6 3.6 6.7-6.7a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
-              </button>
-              <template x-for="c in companii" :key="c.id">
-                <button type="button" @click="stocFilterCompanie=c.id; open=false" class="ios-menu-item">
-                  <span class="truncate" x-text="c.nume_companie"></span>
-                  <svg x-show="stocFilterCompanie===c.id" class="w-3.5 h-3.5 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.4 7.4a1 1 0 01-1.4 0L3.3 9.5a1 1 0 111.4-1.4l3.6 3.6 6.7-6.7a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
-                </button>
-              </template>
-            </div>
-          </div>
 
           <div class="space-y-2.5 pb-10">
             <template
-              x-for="p in produseStocDisponibil.filter(x => (!searchCatalogQuery || x.denumire_produs.toLowerCase().includes(searchCatalogQuery.toLowerCase()) || x.cod_site.toLowerCase().includes(searchCatalogQuery.toLowerCase()) || x.barcode.includes(searchCatalogQuery)) && (!stocFilterCompanie || x.id_companie === stocFilterCompanie))"
+              x-for="p in produseStocFiltrate"
               :key="p.id"
             >
               <button
@@ -6033,34 +7430,40 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               </h2>
               <p class="text-[10px] text-slate-400 mt-0.5">Toate facturile încărcate, pe companii</p>
             </div>
-            <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-md shadow-indigo-500/20 flex items-center justify-center text-white flex-shrink-0">
-              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-            </span>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <button
+                type="button"
+                @click="istoricFiltruDeschis = !istoricFiltruDeschis"
+                class="filtru-link"
+                :class="istoricFiltruDeschis || istoricSortare !== 'recent' || istoricFiltruCompanie || istoricFiltruPerioada !== 'toate' ? 'text-indigo-600' : 'text-slate-400'"
+              >
+                Filtre
+                <svg class="w-2.5 h-2.5 transition-transform" :class="istoricFiltruDeschis ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-md shadow-indigo-500/20 flex items-center justify-center text-white flex-shrink-0">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+              </span>
+            </div>
           </div>
 
-          <!-- Bară căutare -->
-          <div class="glass-panel p-1 rounded-2xl flex items-center gap-2 px-3">
-            <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M21 21l-4.3-4.3"/></svg>
-            <input
-              type="text"
-              x-model="istoricFacturaQuery"
-              placeholder="Caută după nr. factură sau furnizor..."
-              class="w-full bg-transparent border-none focus:ring-0 p-2 text-xs placeholder:text-slate-400"
-            />
-            <button
-              type="button"
-              x-show="istoricFacturaQuery"
-              x-cloak
-              @click="istoricFacturaQuery = ''"
-              class="text-slate-300 flex-shrink-0"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-
-          <!-- Filtre: companie + perioadă -->
-          <div class="space-y-2">
-            <div class="flex gap-1.5 overflow-x-auto pb-0.5" style="scrollbar-width: none;">
+          <!-- Panou filtre - se desface la cerere, chiar sub titlu, peste conținut -->
+          <div x-show="istoricFiltruDeschis" x-collapse x-cloak class="space-y-2 px-1">
+            <div class="flex flex-wrap gap-1.5">
+              <template x-for="opt in [
+                { val: 'recent', label: 'Recente' },
+                { val: 'vechi', label: 'Vechi' },
+                { val: 'furnizor_asc', label: 'Alfabetic' },
+              ]" :key="opt.val">
+                <button
+                  type="button"
+                  @click="istoricSortare = opt.val"
+                  class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                  :class="istoricSortare === opt.val ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white/70 text-slate-500 border-slate-200'"
+                  x-text="opt.label"
+                ></button>
+              </template>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 @click="istoricFiltruCompanie = ''"
@@ -6079,7 +7482,6 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 ></button>
               </template>
             </div>
-
             <div class="flex p-1 rounded-2xl bg-slate-100/80 gap-1">
               <button
                 type="button"
@@ -6104,6 +7506,28 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 :class="istoricFiltruPerioada === 'an' ? 'bg-white shadow-sm text-slate-700' : 'text-slate-400'"
               >
                 Anul acesta
+              </button>
+            </div>
+          </div>
+
+          <!-- Bară căutare -->
+          <div class="flex gap-2">
+            <div class="glass-panel p-1 rounded-2xl flex items-center gap-2 px-3 flex-1 min-w-0">
+              <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M21 21l-4.3-4.3"/></svg>
+              <input
+                type="text"
+                x-model="istoricFacturaQuery"
+                placeholder="Caută după nr. factură sau furnizor..."
+                class="w-full bg-transparent border-none focus:ring-0 p-2 text-xs placeholder:text-slate-400"
+              />
+              <button
+                type="button"
+                x-show="istoricFacturaQuery"
+                x-cloak
+                @click="istoricFacturaQuery = ''"
+                class="text-slate-300 flex-shrink-0"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
           </div>
@@ -6219,12 +7643,40 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             </div>
 
             <div class="space-y-2 border-t border-slate-200/50 pt-3.5">
-              <p
-                class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5"
-              >
-                Toate creanțele active (<span x-text="datornici.length"></span>)
-              </p>
-              <template x-for="d in datornici" :key="'card-' + d.id">
+              <div class="flex items-center justify-between mb-1.5">
+                <p
+                  class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest"
+                >
+                  Toate creanțele active (<span x-text="datorniciFiltrati.length"></span>)
+                </p>
+                <button
+                  type="button"
+                  @click="creanteFiltruDeschis = !creanteFiltruDeschis"
+                  class="filtru-link"
+                  :class="creanteFiltruDeschis || creanteSortare !== 'recent' ? 'text-amber-600' : 'text-slate-400'"
+                >
+                  Filtre
+                  <svg class="w-2.5 h-2.5 transition-transform" :class="creanteFiltruDeschis ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+              </div>
+
+              <div x-show="creanteFiltruDeschis" x-collapse x-cloak class="flex flex-wrap gap-1.5 mb-2">
+                <template x-for="opt in [
+                  { val: 'recent', label: 'Toate' },
+                  { val: 'restante', label: 'Doar restante' },
+                  { val: 'suma_desc', label: 'Sumă mare → mică' },
+                  { val: 'vechime_desc', label: 'Cele mai vechi' },
+                ]" :key="opt.val">
+                  <button
+                    type="button"
+                    @click="creanteSortare = opt.val"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                    :class="creanteSortare === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white/70 text-slate-500 border-slate-200'"
+                    x-text="opt.label"
+                  ></button>
+                </template>
+              </div>
+              <template x-for="d in datorniciFiltrati" :key="'card-' + d.id">
                 <div
                   @click="deschideCreantaDetaliu(d)"
                   class="bg-white/60 p-3 rounded-[22px] border border-white/70 cursor-pointer active:bg-white/90 transition space-y-2 shadow-sm"
@@ -6260,7 +7712,12 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   </div>
                 </div>
               </template>
-              <template x-if="datornici.length === 0">
+              <template x-if="datorniciFiltrati.length === 0 && creanteSortare === 'restante'">
+                <p class="text-[11px] text-slate-400 text-center py-2 italic">
+                  Nicio creanță restantă — toate sunt în termen. 👍
+                </p>
+              </template>
+              <template x-if="datorniciFiltrati.length === 0 && creanteSortare !== 'restante'">
                 <p class="text-[11px] text-slate-400 text-center py-2 italic">
                   Nu există creanțe active de încasat.
                 </p>
@@ -6548,16 +8005,11 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
               <button
                 type="button"
                 @click="registruFiltreDeschise = !registruFiltreDeschise"
-                class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide"
-                :class="registruFiltreDeschise ? 'text-rose-500' : 'text-slate-400'"
+                class="filtru-link"
+                :class="registruFiltreDeschise || registruFilterCont || registruFilterTip || registruFilterTipTranzactie || registruFilterDeLa || registruFilterPanaLa ? 'text-rose-600' : 'text-slate-400'"
               >
-                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2" /></svg>
                 Filtre
-                <span
-                  x-show="registruFilterCont || registruFilterTip || registruFilterTipTranzactie || registruFilterDeLa || registruFilterPanaLa"
-                  x-cloak
-                  class="w-1.5 h-1.5 rounded-full bg-rose-500"
-                ></span>
+                <svg class="w-2.5 h-2.5 transition-transform" :class="registruFiltreDeschise ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
             </div>
           </div>
@@ -6969,12 +8421,82 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
             >
               Clienți
             </h2>
-            <button
-              @click="deschideClientNou()"
-              class="text-[10px] font-bold uppercase bg-rose-50 text-rose-500 border border-rose-100 px-3 py-1.5 rounded-full"
-            >
-              + Client nou
-            </button>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <span
+                class="text-[10px] font-bold bg-rose-50 border border-rose-100 text-rose-500 px-2.5 py-1 rounded-full"
+                x-text="clientiFiltrati.length"
+              ></span>
+              <button
+                type="button"
+                @click="clientiFiltruDeschis = !clientiFiltruDeschis"
+                class="filtru-link"
+                :class="clientiFiltruDeschis || clientiFiltruActiv ? 'text-rose-600' : 'text-slate-400'"
+              >
+                Filtre
+                <svg class="w-2.5 h-2.5 transition-transform" :class="clientiFiltruDeschis ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="3.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </button>
+              <button
+                @click="deschideClientNou()"
+                class="text-[10px] font-bold uppercase bg-rose-50 text-rose-500 border border-rose-100 px-3 py-1.5 rounded-full"
+              >
+                + Client nou
+              </button>
+            </div>
+          </div>
+
+          <!-- Panou filtre - se desface la cerere, chiar sub titlu, peste conținut -->
+          <div x-show="clientiFiltruDeschis" x-collapse x-cloak class="space-y-2 px-1">
+            <div class="flex flex-wrap gap-1.5">
+              <template x-for="opt in [
+                { val: 'recent', label: 'Recenți' },
+                { val: 'nume_asc', label: 'Alfabetic (A-Z)' },
+                { val: 'comenzi_desc', label: 'Nr. comenzi' },
+                { val: 'suma_desc', label: 'Sumă cheltuită' },
+              ]" :key="opt.val">
+                <button
+                  type="button"
+                  @click="toggleClientiSortare(opt.val)"
+                  class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                  :class="clientiSortareActive.includes(opt.val) ? 'bg-rose-500 text-white border-rose-500' : 'bg-white/70 text-slate-500 border-slate-200'"
+                  x-text="opt.label"
+                ></button>
+              </template>
+            </div>
+            <!-- Filtre multi-select: se pot combina oricâte deodată -->
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                @click="toggleClientiFiltru('fara_telefon')"
+                class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                :class="clientiFiltreActive.includes('fara_telefon') ? 'bg-slate-800 text-white border-slate-800' : 'bg-white/70 text-slate-500 border-slate-200'"
+              >
+                Fără telefon
+              </button>
+              <button
+                type="button"
+                @click="toggleClientiFiltru('inactivi')"
+                class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition"
+                :class="clientiFiltreActive.includes('inactivi') ? 'bg-slate-800 text-white border-slate-800' : 'bg-white/70 text-slate-500 border-slate-200'"
+                x-text="'Inactivi (' + (clientiInactivLuni || 3) + '+ luni)'"
+              ></button>
+            </div>
+            <!-- Export listă curentă (respectă căutarea + filtrele active) -->
+            <div class="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                @click="exportaClientiCSV()"
+                class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition bg-emerald-50 text-emerald-600 border-emerald-100"
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                @click="exportaClientiPDF()"
+                class="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold uppercase tracking-wide border transition bg-slate-100 text-slate-600 border-slate-200"
+              >
+                Export PDF
+              </button>
+            </div>
           </div>
 
           <div class="flex gap-2 items-stretch">
@@ -6995,61 +8517,6 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-
-            <!-- Iconiță filtru/sortare clienți: deschide un dropdown, nu mai stă mereu pe ecran -->
-            <button
-              type="button"
-              @click="clientiFiltruDeschis = !clientiFiltruDeschis"
-              class="glass-panel rounded-2xl w-11 flex-shrink-0 flex items-center justify-center relative active:scale-95 transition"
-              :class="clientiFiltruDeschis ? 'ring-2 ring-rose-300' : ''"
-            >
-              <svg class="w-4 h-4 text-slate-600" :class="clientiSortare !== 'recent' ? 'text-rose-500' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M6.75 9.75h10.5M10.5 15h3" />
-              </svg>
-              <!-- punct roșu când e activă o sortare/filtrare diferită de cea implicită -->
-              <span
-                x-show="clientiSortare !== 'recent'"
-                x-cloak
-                class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"
-              ></span>
-            </button>
-          </div>
-
-          <!-- Dropdown sortare / filtrare clienți (ascuns în spatele iconiței) -->
-          <div
-            x-show="clientiFiltruDeschis"
-            x-cloak
-            x-transition:enter="transition ease-out duration-150"
-            x-transition:enter-start="opacity-0 -translate-y-1"
-            x-transition:enter-end="opacity-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-100"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            @click.outside="clientiFiltruDeschis = false"
-            class="glass-panel rounded-2xl p-1.5 space-y-0.5"
-          >
-            <template x-for="opt in [
-              { val: 'recent', label: 'Recenți', desc: 'După ultima comandă' },
-              { val: 'nume_asc', label: 'Alfabetic (A-Z)', desc: 'După numele clientului' },
-              { val: 'comenzi_desc', label: 'Număr de comenzi', desc: 'Cei cu cele mai multe comenzi primii' },
-              { val: 'suma_desc', label: 'Sumă cheltuită', desc: 'Cei care au cheltuit cel mai mult primii' },
-              { val: 'fara_telefon', label: 'Fără telefon', desc: 'Doar clienții fără număr salvat' },
-            ]" :key="opt.val">
-              <button
-                type="button"
-                @click="clientiSortare = opt.val; clientiFiltruDeschis = false"
-                class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition"
-                :class="clientiSortare === opt.val ? 'bg-rose-50' : 'active:bg-slate-100'"
-              >
-                <div class="flex-1 min-w-0">
-                  <p class="text-xs font-bold" :class="clientiSortare === opt.val ? 'text-rose-600' : 'text-slate-700'" x-text="opt.label"></p>
-                  <p class="text-[9.5px] text-slate-400 mt-0.5" x-text="opt.desc"></p>
-                </div>
-                <svg x-show="clientiSortare === opt.val" x-cloak class="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-              </button>
-            </template>
           </div>
 
           <div class="space-y-2.5 pb-6">
@@ -7076,15 +8543,8 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                 </div>
               </button>
             </template>
-            <template x-if="clientiFiltrati.length === 0 && clientiSortare === 'fara_telefon'">
-              <p class="text-center text-xs text-slate-400 py-10 italic">
-                Toți clienții au un număr de telefon salvat. 👍
-              </p>
-            </template>
-            <template x-if="clientiFiltrati.length === 0 && clientiSortare !== 'fara_telefon'">
-              <p class="text-center text-xs text-slate-400 py-10 italic">
-                Niciun client găsit. Apasă „+ Client nou” pentru a adăuga
-                primul, sau adaugă clienți direct din tab-ul de Vânzare.
+            <template x-if="clientiFiltrati.length === 0">
+              <p class="text-center text-xs text-slate-400 py-10 italic" x-text="clientiMesajListaGoala">
               </p>
             </template>
           </div>
@@ -10362,6 +11822,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           themeAccent: "rose", // rose | teal | indigo | amber
           personalizareDeschisa: false,
           headerMenuDeschis: false, // meniu iOS-style din antet (personalizare / oprire server / deconectare)
+          notificariDeschis: false, // panoul de alerte (clopoțel) din antet
           fileToken: "", // token temporar pentru afișarea pozelor din colecții protejate
           pozeCache: {}, // cheie "recordId/fisier" -> blob URL deja descărcat
           pozeLoading: {}, // cheie -> true cât timp descărcarea e în curs (evită cereri duplicate)
@@ -10376,15 +11837,25 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           companii: [],
           conturi: [],
           datornici: [],
+          creanteSortare: "recent", // 'recent' | 'restante' | 'suma_desc' | 'vechime_desc'
+          creanteFiltruDeschis: false,
           produseStocDisponibil: [],
 
           // --- Clienți (bază de date reală: nume, telefon, email, adresă, notițe) ---
           clienti: [],
           clientiSearchQuery: "",
-          // Sortare listă Clienți: 'recent' (implicit, ultima comandă), 'nume_asc' (A-Z),
-          // 'comenzi_desc' (nr. comenzi), 'suma_desc' (total cheltuit), 'fara_telefon'
-          // (îi scoate în față pe cei fără număr de telefon salvat).
-          clientiSortare: "recent",
+          // Sortare listă Clienți - multi-select, se pot combina oricâte deodată
+          // (ex: "Alfabetic" + "Nr. comenzi" => sortează după nr. comenzi, iar la
+          // egalitate alfabetic). Ordinea din array = ordinea de prioritate (primul
+          // ales e criteriul principal). 'recent' (implicit, ultima comandă) e
+          // exclusiv cu celelalte - alegerea lui resetează combinația.
+          // Valori posibile: 'recent', 'nume_asc' (A-Z), 'comenzi_desc' (nr. comenzi),
+          // 'suma_desc' (total cheltuit).
+          clientiSortareActive: ["recent"],
+          // Filtre multi-select pentru Clienți - independente de sortare, se pot combina
+          // oricâte deodată (ex: "Fără telefon" + "Inactivi"). Vezi toggleClientiFiltru().
+          clientiFiltreActive: [],
+          clientiInactivLuni: 3,
           clientiFiltruDeschis: false, // dropdown-ul de filtrare/sortare clienti, ascuns in spatele unei iconite
           clientModalActiv: false,
           clientSalvand: false,
@@ -10402,6 +11873,8 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
 
           searchCatalogQuery: "",
           stocFilterCompanie: "",
+          stocSortare: "implicit", // 'implicit' | 'alfabetic' | 'stoc_asc' | 'valoare_desc'
+          stocFiltruDeschis: false,
           stats: { profit: 0, vanzari: 0, achizitii: 0 },
           currentCardIndex: 0,
           stickyPickerState: {}, // stare runtime (per ref) pentru noul selector "bară sticky" de la Transfer
@@ -10411,6 +11884,11 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           dashboardCustomDeLa: "",
           dashboardCustomPanaLa: "",
           dashboardFiltersOpen: false,
+          dashboardClientExtrasId: "", // clientul ales în Dashboard > Rapoarte > Extras cont client
+
+          // ---- Căutare globală (Cmd/Ctrl+K) ----
+          globalSearchOpen: false,
+          globalSearchQuery: "",
           toateVanzariRaw: [],
           toateItemsRaw: [],
           toateAchizitiiRaw: [],
@@ -10489,6 +11967,8 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           istoricFacturaQuery: "",
           istoricFiltruCompanie: "",
           istoricFiltruPerioada: "toate", // 'toate' | 'luna' | 'an'
+          istoricSortare: "recent", // 'recent' | 'vechi' | 'furnizor_asc'
+          istoricFiltruDeschis: false,
 
 
           // Editare notă/descriere direct din Registru
@@ -10649,6 +12129,17 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
     window.dispatchEvent(new CustomEvent("tab-schimbat"));
   });
 
+  // ---- Căutare globală (Cmd/Ctrl+K) - deschide/închide de oriunde din aplicație ----
+  window.addEventListener("keydown", (e) => {
+    const modificatorApasat = e.metaKey || e.ctrlKey;
+    if (modificatorApasat && (e.key === "k" || e.key === "K")) {
+      e.preventDefault();
+      this.deschideCautareGlobala();
+    } else if (e.key === "Escape" && this.globalSearchOpen) {
+      this.globalSearchOpen = false;
+    }
+  });
+
   // Blochează scroll-ul paginii din spate cât timp oricare dintre modalele
   // full-screen de mai jos e deschis (fix consistent pe toate, nu doar pe
   // detaliul de stoc) - previne aceeași "scurgere" de scroll pe iOS/mobil.
@@ -10665,6 +12156,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
     "facturaModalActiv",
     "produsNouModalActiv",
     "scannerActiv",
+    "globalSearchOpen",
   ];
   const actualizeazaLockModale = () => {
     const vreunulDeschis = modaleFullScreen.some((flag) => !!this[flag]);
@@ -12257,6 +13749,60 @@ culoareAvatarClient(nume) {
             return val > 0 ? Math.max(4, (val / max) * 100) : 0;
           },
 
+          // ---- Grafic Evoluție: linie/arie SVG netedă (curbă tip Bézier), în loc de bare CSS ----
+          // Calculează totul într-un viewBox fix (0 0 300 130) ca să fie simplu de randat
+          // responsive (width:100% pe <svg>), indiferent de câte puncte are perioada aleasă.
+          getChartSvgData() {
+            const data = this.getChartData();
+            const max = this.getMaxChartValue();
+            const w = 300,
+              h = 130,
+              padX = 4,
+              padTop = 10,
+              padBottom = 6;
+            const n = data.length;
+            const usableH = h - padTop - padBottom;
+            const stepX = n > 1 ? (w - padX * 2) / (n - 1) : 0;
+            const scaleY = (v) => padTop + usableH - (v / max) * usableH;
+            const toPts = (campo) =>
+              data.map((m, i) => ({
+                x: n > 1 ? padX + i * stepX : w / 2,
+                y: scaleY(m[campo]),
+                v: m[campo],
+              }));
+            // Curbă netedă simplă: Bézier cubică între fiecare pereche de puncte,
+            // cu punctele de control pe orizontală la jumătatea distanței (efect "linie lină").
+            const smoothPath = (pts) => {
+              if (!pts.length) return "";
+              if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+              let d = `M ${pts[0].x} ${pts[0].y}`;
+              for (let i = 0; i < pts.length - 1; i++) {
+                const p0 = pts[i],
+                  p1 = pts[i + 1];
+                const cx = (p0.x + p1.x) / 2;
+                d += ` C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+              }
+              return d;
+            };
+            const areaPath = (pts) => {
+              if (!pts.length) return "";
+              const base = h - padBottom;
+              return `${smoothPath(pts)} L ${pts[pts.length - 1].x} ${base} L ${pts[0].x} ${base} Z`;
+            };
+            const ptsV = toPts("vanzari");
+            const ptsA = toPts("achizitii");
+            return {
+              w,
+              h,
+              vanzariLine: smoothPath(ptsV),
+              vanzariArea: areaPath(ptsV),
+              achizitiiLine: smoothPath(ptsA),
+              achizitiiArea: areaPath(ptsA),
+              pointsV: ptsV,
+              pointsA: ptsA,
+            };
+          },
+
           // Rentabilitate pe fiecare companie, în perioada selectată (independent de filtrul de companie
           // ales - dacă un furnizor e deja selectat, lista va conține practic doar acea companie)
           getCompanyBreakdown() {
@@ -12420,6 +13966,190 @@ culoareAvatarClient(nume) {
             return max || 1;
           },
 
+          // Generează un PDF cu tot ce se vede în panoul "Statistici Analitice" de pe
+          // Dashboard, pentru perioada + compania selectate curent acolo: totalurile
+          // (vânzări/achiziții/profit + tendință vs. perioada anterioară), graficul de
+          // evoluție (desenat ca bare, la fel ca pe ecran) și cele două topuri de produse.
+          descarcaDashboardPDF() {
+            if (!window.jspdf) return alert("Librăria PDF nu s-a încărcat. Verifică conexiunea la internet.");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: "mm", format: "a4" });
+            const S = (s) => this.stripDiacritics(s);
+            const culoare = [20, 184, 166]; // teal, ca accent principal al Dashboard-ului
+            const stats = this.getDashboardStats();
+            const numeCompanie = this.dashboardCompanie
+              ? (this.companii.find((c) => c.id === this.dashboardCompanie) || {}).nume_companie || ""
+              : "Toate companiile";
+            const numePerioade = {
+              saptamana: "Ultimele 7 zile",
+              tot: "Tot intervalul",
+              luna_curenta: "Luna curenta",
+              "3luni": "Ultimele 3 luni",
+              "6luni": "Ultimele 6 luni",
+              an_curent: "Anul curent",
+              custom: "Perioada personalizata",
+            };
+
+            // --- Antet ---
+            this.desenGradient(doc, 0, 0, 210, 30, [20, 184, 166], [13, 148, 136]);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(17);
+            doc.text("PriorityERP", 14, 14);
+            doc.setFontSize(9.5);
+            doc.setFont("helvetica", "normal");
+            doc.text(
+              "Raport Dashboard - " + S(numePerioade[this.dashboardPeriod] || "") + " - " + S(numeCompanie),
+              14,
+              21,
+            );
+            doc.setFontSize(7.5);
+            doc.text("Generat: " + new Date().toLocaleDateString("ro-RO"), 196, 21, { align: "right" });
+
+            // --- Cutii cu totaluri (+ tendință vs. perioada anterioară) ---
+            let y = 38;
+            const boxTotal = (label, val, x, culoareVal, cheieTrend) => {
+              doc.setFillColor(248, 250, 252);
+              doc.setDrawColor(226, 232, 240);
+              doc.roundedRect(x, y, 58, 26, 3, 3, "FD");
+              doc.setFontSize(7);
+              doc.setTextColor(148, 163, 184);
+              doc.setFont("helvetica", "normal");
+              doc.text(S(label), x + 4, y + 8);
+              doc.setFontSize(12);
+              doc.setTextColor(culoareVal[0], culoareVal[1], culoareVal[2]);
+              doc.setFont("helvetica", "bold");
+              doc.text(this.formatMDLPdf(val), x + 4, y + 19);
+              const trend = cheieTrend ? this.getTrendPct(cheieTrend) : null;
+              if (trend !== null) {
+                doc.setFontSize(7);
+                doc.setFont("helvetica", "bold");
+                const culoareTrend = trend >= 0 ? [5, 150, 105] : [220, 38, 38];
+                doc.setTextColor(culoareTrend[0], culoareTrend[1], culoareTrend[2]);
+                doc.text(
+                  (trend >= 0 ? "+" : "") + trend.toFixed(0) + "% vs perioada anterioara",
+                  x + 4,
+                  y + 24,
+                );
+              }
+            };
+            boxTotal("VANZARI", stats.vanzari, 14, [5, 150, 105], "vanzari");
+            boxTotal("ACHIZITII", stats.achizitii, 76, [220, 38, 38], "achizitii");
+            boxTotal("PROFIT NET", stats.profit, 138, stats.profit >= 0 ? [30, 41, 59] : [220, 38, 38], "profit");
+            y += 34;
+
+            // --- Grafic de evoluție (bare, ca pe ecran) ---
+            const chartData = this.getChartData();
+            if (chartData.length > 0) {
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(9);
+              doc.setTextColor(51, 65, 85);
+              doc.text(S(this.getChartTitle()), 14, y);
+              y += 6;
+
+              const chartX = 14,
+                chartW = 182,
+                chartH = 45;
+              const maxVal = this.getMaxChartValue() || 1;
+              // Linii de grilă orizontale (subțiri, ca reper de citire a înălțimii barelor)
+              doc.setDrawColor(226, 232, 240);
+              doc.setLineWidth(0.2);
+              [0.33, 0.66, 1].forEach((frac) => {
+                const ly = y + chartH - chartH * frac;
+                doc.line(chartX, ly, chartX + chartW, ly);
+              });
+
+              const n = chartData.length;
+              const slotW = chartW / n;
+              const barW = Math.min(slotW * 0.32, 3.2);
+              const araratLabel = n <= 14; // etichete doar dacă nu sunt prea multe (altfel se suprapun)
+              chartData.forEach((m, idx) => {
+                const slotX = chartX + idx * slotW + slotW / 2;
+                const hV = (m.vanzari / maxVal) * chartH;
+                const hA = (m.achizitii / maxVal) * chartH;
+                doc.setFillColor(45, 212, 191);
+                doc.rect(slotX - barW - 0.3, y + chartH - hV, barW, hV, "F");
+                doc.setFillColor(251, 113, 133);
+                doc.rect(slotX + 0.3, y + chartH - hA, barW, hA, "F");
+                if (araratLabel) {
+                  doc.setFont("helvetica", "normal");
+                  doc.setFontSize(5.5);
+                  doc.setTextColor(148, 163, 184);
+                  doc.text(S(m.label), slotX, y + chartH + 4, { align: "center" });
+                }
+              });
+              y += chartH + (araratLabel ? 9 : 5);
+
+              // Legendă
+              doc.setFillColor(45, 212, 191);
+              doc.rect(14, y - 2.5, 3, 3, "F");
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(7);
+              doc.setTextColor(100, 116, 139);
+              doc.text("Vanzari", 19, y);
+              doc.setFillColor(251, 113, 133);
+              doc.rect(45, y - 2.5, 3, 3, "F");
+              doc.text("Achizitii", 50, y);
+              y += 8;
+            }
+
+            // --- Tabel top produse (funcție reutilizabilă pentru cele două topuri) ---
+            const desenTopProduse = (titlu, lista, coloanaExtra) => {
+              if (lista.length === 0) return;
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(9);
+              doc.setTextColor(51, 65, 85);
+              doc.text(S(titlu), 14, y);
+              y += 5;
+              doc.setFillColor(culoare[0], culoare[1], culoare[2]);
+              doc.rect(14, y, 182, 7, "F");
+              doc.setTextColor(255, 255, 255);
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(7);
+              doc.text("PRODUS", 17, y + 4.8);
+              doc.text(coloanaExtra.label1, 130, y + 4.8);
+              doc.text(coloanaExtra.label2, 165, y + 4.8);
+              y += 7;
+              lista.forEach((p, idx) => {
+                if (idx % 2 === 0) {
+                  doc.setFillColor(240, 253, 250);
+                  doc.rect(14, y, 182, 6.5, "F");
+                }
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(30, 41, 59);
+                doc.text(String(idx + 1), 17, y + 4.4);
+                doc.text(S(p.nume || "-").slice(0, 42), 22, y + 4.4);
+                doc.setTextColor(71, 85, 105);
+                doc.text(coloanaExtra.val1(p), 130, y + 4.4);
+                doc.setFont("helvetica", "bold");
+                const culVal2 = coloanaExtra.culoareVal2 ? coloanaExtra.culoareVal2(p) : [30, 41, 59];
+                doc.setTextColor(culVal2[0], culVal2[1], culVal2[2]);
+                doc.text(coloanaExtra.val2(p), 165, y + 4.4);
+                y += 6.5;
+              });
+              y += 8;
+            };
+
+            desenTopProduse("Top 5 Produse (dupa vanzari)", this.getTopProduse(), {
+              label1: "CANT.",
+              label2: "VALOARE",
+              val1: (p) => String(p.cantitate),
+              val2: (p) => this.formatMDLPdf(p.valoare),
+            });
+
+            desenTopProduse("Top 5 Produse (dupa profit)", this.getTopProduseMarja(), {
+              label1: "MARJA %",
+              label2: "PROFIT",
+              val1: (p) => p.marjaPct.toFixed(0) + "%",
+              val2: (p) => this.formatMDLPdf(p.profit),
+              culoareVal2: (p) => (p.profit >= 0 ? [5, 150, 105] : [220, 38, 38]),
+            });
+
+            this.desenFooterToatePaginile(doc, culoare, new Date().toLocaleString("ro-RO"));
+            doc.save("Dashboard_" + new Date().toISOString().split("T")[0] + ".pdf");
+          },
+
           // ---- Flux de bani pe conturi (ce intră / ce iese) ----
           // Citește direct din ledger_finance (toateTranzactiileRegistru), filtrat pe perioada
           // selectată în Statistici Analitice, și grupează suma pe fiecare cont + tip de mișcare:
@@ -12465,6 +14195,59 @@ culoareAvatarClient(nume) {
             return max || 1;
           },
 
+          // ==================== "O BUCĂȚICĂ DIN FIECARE TAB", pe Dashboard ====================
+          // Cele 3 funcții de mai jos NU fac cereri noi către server - reutilizează datele deja
+          // încărcate (toateProduseRaw, toateAchizitiiRaw, toateTranzactiileRegistru) pentru a arăta
+          // pe Dashboard un rezumat din Stoc, Tranzit și Registru, fără să duplice logica lor.
+
+          // ---- Instantaneu Stoc: valoare totală + ce trebuie reaprovizionat (stoc <= 3 buc) ----
+          getStocSnapshotDashboard() {
+            const produse = this.toateProduseRaw || [];
+            const valoareTotala = produse.reduce(
+              (s, p) => s + (p.stoc_actual || 0) * (p.pret_cost_mediu || 0),
+              0,
+            );
+            const epuizate = produse.filter((p) => (p.stoc_actual || 0) <= 0);
+            const stocRedus = produse
+              .filter((p) => (p.stoc_actual || 0) > 0 && (p.stoc_actual || 0) <= 3)
+              .sort((a, b) => (a.stoc_actual || 0) - (b.stoc_actual || 0));
+            return {
+              totalProduse: produse.length,
+              valoareTotala,
+              epuizate,
+              stocRedus,
+              listaAfisata: [...epuizate, ...stocRedus].slice(0, 4),
+            };
+          },
+
+          // ---- Instantaneu Tranzit: comenzi de marfă încă pe drum (neprimite) ----
+          getTranzitSnapshotDashboard() {
+            const peDrum = (this.toateAchizitiiRaw || [])
+              .filter((a) => !!a.tip_plata && a.stare !== "primita")
+              .sort(
+                (a, b) =>
+                  new Date(a.data_comanda || a.created) -
+                  new Date(b.data_comanda || b.created),
+              );
+            const valoareTotala = peDrum.reduce((s, a) => s + (a.total_general || 0), 0);
+            return {
+              nrComenzi: peDrum.length,
+              valoareTotala,
+              listaAfisata: peDrum.slice(0, 3),
+            };
+          },
+
+          // ---- Activitate recentă: ultimele mișcări reale din Registru, indiferent de filtrele
+          // active în tabul Registru (care nu trebuie să afecteze ce se vede pe Dashboard). ----
+          getActivitateRecentaDashboard(limita) {
+            limita = limita || 6;
+            return (this.toateTranzactiileRegistru || [])
+              .filter((t) => t.tip_tranzactie !== "creanta_pendinte")
+              .slice()
+              .sort((a, b) => new Date(b.data_tranzactie) - new Date(a.data_tranzactie))
+              .slice(0, limita);
+          },
+
           companyColor(idx) {
             const paleta = [
               "#fb7185",
@@ -12492,6 +14275,128 @@ culoareAvatarClient(nume) {
               return `${this.companyColor(idx)} ${start}deg ${acc}deg`;
             });
             return `background: conic-gradient(${parts.join(", ")});`;
+          },
+
+          // ---- Donut SVG (înlocuiește conic-gradient CSS): cerc cu capete rotunjite pe
+          // fiecare felie, mult mai "premium" vizual decât un simplu conic-gradient plat. ----
+          getCompanyDonutSegments() {
+            const breakdown = this.getCompanyBreakdown();
+            const r = 40;
+            const circumference = 2 * Math.PI * r;
+            const total = breakdown.reduce((s, c) => s + c.vanzari, 0);
+            if (!total) return [];
+            let acc = 0;
+            return breakdown.map((c, idx) => {
+              const frac = c.vanzari / total;
+              const len = frac * circumference;
+              const offset = -acc * circumference;
+              acc += frac;
+              return {
+                color: this.companyColor(idx),
+                dasharray: `${Math.max(len - 1.5, 0)} ${circumference}`,
+                dashoffset: offset,
+                pct: Math.round(frac * 100),
+              };
+            });
+          },
+
+          // ==================== CĂUTARE GLOBALĂ (Cmd/Ctrl+K) ====================
+          // Caută deodată în clienți, produse, vânzări (facturi) și comenzi de
+          // aprovizionare, direct din datele deja încărcate în memorie (fără cereri
+          // noi către server) - utilă când baza de date a crescut și nu mai vrei să
+          // dai tab cu tab ca să găsești ceva.
+          deschideCautareGlobala() {
+            this.globalSearchOpen = true;
+            this.$nextTick(() => {
+              if (this.$refs.globalSearchInput) this.$refs.globalSearchInput.focus();
+            });
+          },
+
+          inchideCautareGlobala() {
+            this.globalSearchOpen = false;
+            this.globalSearchQuery = "";
+          },
+
+          getGlobalSearchResults() {
+            const q = (this.globalSearchQuery || "").trim().toLowerCase();
+            if (q.length < 2)
+              return { clienti: [], produse: [], facturi: [], comenzi: [] };
+
+            const clienti = (this.clienti || [])
+              .filter((c) =>
+                [c.nume, c.telefon, c.email].some((v) =>
+                  (v || "").toLowerCase().includes(q),
+                ),
+              )
+              .slice(0, 5);
+
+            const produse = (this.toateProduseRaw || [])
+              .filter((p) =>
+                [p.denumire_produs, p.cod_site, p.barcode].some((v) =>
+                  (v || "").toLowerCase().includes(q),
+                ),
+              )
+              .slice(0, 5);
+
+            const facturi = (this.toateVanzariRaw || [])
+              .filter((v) => (v.client_nume || "").toLowerCase().includes(q))
+              .sort((a, b) => new Date(b.created) - new Date(a.created))
+              .slice(0, 5);
+
+            const comenzi = (this.toateAchizitiiRaw || [])
+              .filter((a) => {
+                const numeCompanie = (
+                  (this.companii || []).find((c) => c.id === a.id_companie) ||
+                  {}
+                ).nume_companie || "";
+                return (
+                  (a.referinta_factura || "").toLowerCase().includes(q) ||
+                  numeCompanie.toLowerCase().includes(q)
+                );
+              })
+              .sort(
+                (a, b) =>
+                  new Date(b.data_comanda || b.created) -
+                  new Date(a.data_comanda || a.created),
+              )
+              .slice(0, 5);
+
+            return { clienti, produse, facturi, comenzi };
+          },
+
+          globalSearchNumarRezultate() {
+            const r = this.getGlobalSearchResults();
+            return (
+              r.clienti.length +
+              r.produse.length +
+              r.facturi.length +
+              r.comenzi.length
+            );
+          },
+
+          numeCompanieDupaId(id) {
+            return (
+              (this.companii || []).find((c) => c.id === id)?.nume_companie ||
+              "—"
+            );
+          },
+
+          // Navighează instant la tab-ul relevant și deschide detaliul, atunci când e posibil.
+          deschideRezultatCautareGlobala(tip, item) {
+            this.inchideCautareGlobala();
+            if (tip === "client") {
+              this.activeTab = "clienti";
+              this.$nextTick(() => {
+                this.clientDetaliuActiv = item;
+              });
+            } else if (tip === "produs") {
+              this.activeTab = "stoc";
+              this.$nextTick(() => this.deschideDetaliuStoc(item));
+            } else if (tip === "factura") {
+              this.activeTab = "registru";
+            } else if (tip === "comanda") {
+              this.activeTab = "tranzit";
+            }
           },
 
           // ---- Detaliu Stoc: istoric loturi de aprovizionare (FIFO), calculat din datele existente ----
@@ -13515,6 +15420,23 @@ culoareAvatarClient(nume) {
               }
               grupuri[cheie].facturi.push(rec);
             }
+            const cmpData = (a, b) =>
+              new Date(b.data_incarcare || b.created) - new Date(a.data_incarcare || a.created);
+            for (const g of Object.values(grupuri)) {
+              switch (this.istoricSortare) {
+                case "vechi":
+                  g.facturi.sort((a, b) => -cmpData(a, b));
+                  break;
+                case "furnizor_asc":
+                  g.facturi.sort((a, b) =>
+                    (a.furnizor_denumire || "").localeCompare(b.furnizor_denumire || "", "ro"),
+                  );
+                  break;
+                case "recent":
+                default:
+                  g.facturi.sort(cmpData);
+              }
+            }
             return Object.values(grupuri).sort((a, b) =>
               a.nume.localeCompare(b.nume, "ro"),
             );
@@ -14027,6 +15949,118 @@ culoareAvatarClient(nume) {
             }
           },
 
+          // Centru de notificări din antet: strânge într-un singur loc alertele
+          // care altfel ar sta ascunse fiecare în tab-ul ei (creanțe restante,
+          // stoc scăzut/epuizat, clienți fără telefon).
+          get alerteActive() {
+            const alerte = [];
+            const restante = (this.datornici || []).filter((d) => d.intarziat).length;
+            if (restante > 0) {
+              alerte.push({
+                id: "creante_restante",
+                titlu: restante === 1 ? "1 creanță restantă" : restante + " creanțe restante",
+                detaliu: "Au depășit pragul de 14 zile",
+                culoare: "rose",
+                actiune: () => {
+                  this.activeTab = "creante";
+                  this.creanteSortare = "restante";
+                },
+              });
+            }
+            const epuizate = (this.produseStocDisponibil || []).filter((p) => (p.stoc_actual || 0) <= 0).length;
+            if (epuizate > 0) {
+              alerte.push({
+                id: "stoc_epuizat",
+                titlu: epuizate === 1 ? "1 produs epuizat" : epuizate + " produse epuizate",
+                detaliu: "Stoc pe zero — reaprovizionare necesară",
+                culoare: "rose",
+                actiune: () => {
+                  this.activeTab = "stoc";
+                  this.stocSortare = "stoc_asc";
+                },
+              });
+            }
+            const scazute = (this.produseStocDisponibil || []).filter(
+              (p) => (p.stoc_actual || 0) > 0 && (p.stoc_actual || 0) <= 3,
+            ).length;
+            if (scazute > 0) {
+              alerte.push({
+                id: "stoc_scazut",
+                titlu: scazute === 1 ? "1 produs cu stoc scăzut" : scazute + " produse cu stoc scăzut",
+                detaliu: "3 bucăți sau mai puțin rămase",
+                culoare: "amber",
+                actiune: () => {
+                  this.activeTab = "stoc";
+                  this.stocSortare = "stoc_asc";
+                },
+              });
+            }
+            const faraTelefon = (this.clienti || []).filter((c) => !(c.telefon || "").trim()).length;
+            if (faraTelefon > 0) {
+              alerte.push({
+                id: "clienti_fara_telefon",
+                titlu: faraTelefon === 1 ? "1 client fără telefon" : faraTelefon + " clienți fără telefon",
+                detaliu: "Nu pot fi contactați rapid",
+                culoare: "slate",
+                actiune: () => {
+                  this.activeTab = "clienti";
+                  if (!this.clientiFiltreActive.includes("fara_telefon")) {
+                    this.clientiFiltreActive.push("fara_telefon");
+                  }
+                  this.clientiFiltruDeschis = true;
+                },
+              });
+            }
+            return alerte;
+          },
+          get datorniciFiltrati() {
+            let lista = (this.datornici || []).slice();
+            if (this.creanteSortare === "restante") {
+              lista = lista.filter((d) => d.intarziat);
+            }
+            switch (this.creanteSortare) {
+              case "suma_desc":
+                return lista.sort((a, b) => (b.suma_ramasa || 0) - (a.suma_ramasa || 0));
+              case "vechime_desc":
+                return lista.sort((a, b) => (b.zileVechime || 0) - (a.zileVechime || 0));
+              case "restante":
+                return lista.sort((a, b) => (b.zileVechime || 0) - (a.zileVechime || 0));
+              case "recent":
+              default:
+                return lista;
+            }
+          },
+          get produseStocFiltrate() {
+            const q = (this.searchCatalogQuery || "").trim().toLowerCase();
+            let lista = (this.produseStocDisponibil || []).filter(
+              (x) =>
+                (!q ||
+                  x.denumire_produs.toLowerCase().includes(q) ||
+                  x.cod_site.toLowerCase().includes(q) ||
+                  x.barcode.includes(this.searchCatalogQuery.trim())) &&
+                (!this.stocFilterCompanie || x.id_companie === this.stocFilterCompanie),
+            );
+            const cmpNume = (a, b) =>
+              (a.denumire_produs || "").localeCompare(b.denumire_produs || "", "ro", { sensitivity: "base" });
+            switch (this.stocSortare) {
+              case "alfabetic":
+                return lista.slice().sort(cmpNume);
+              case "stoc_asc":
+                // Cei cu stoc puțin (sau 0) apar primii - util pentru reaprovizionare
+                return lista.slice().sort((a, b) => (a.stoc_actual || 0) - (b.stoc_actual || 0) || cmpNume(a, b));
+              case "valoare_desc":
+                return lista
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      (b.stoc_actual || 0) * (b.pret_cost_mediu || 0) -
+                        (a.stoc_actual || 0) * (a.pret_cost_mediu || 0) || cmpNume(a, b),
+                  );
+              case "implicit":
+              default:
+                return lista;
+            }
+          },
           get clientiFiltrati() {
             const q = (this.clientiSearchQuery || "").trim().toLowerCase();
             const listaCuStats = this.clienti.map((c) => ({
@@ -14040,36 +16074,329 @@ culoareAvatarClient(nume) {
                     (c.nume || "").toLowerCase().includes(q) ||
                     (c.telefon || "").toLowerCase().includes(q),
                 );
-            // "Fără telefon" e mai degrabă un filtru decât o sortare - păstrăm
-            // doar clienții cărora le lipsește numărul, apoi îi ordonăm alfabetic
-            // ca să fie ușor de parcurs lista.
-            if (this.clientiSortare === "fara_telefon") {
+            // Filtrele sunt acum multi-select (clientiFiltreActive), independente de
+            // sortare - se pot combina oricâte deodată (ex: "Fără telefon" + "Inactivi").
+            if (this.clientiFiltreActive.includes("fara_telefon")) {
               filtrata = filtrata.filter((c) => !(c.telefon || "").trim());
+            }
+            if (this.clientiFiltreActive.includes("inactivi")) {
+              const acum = Date.now();
+              const ZI_MS = 24 * 60 * 60 * 1000;
+              const pragZile = (this.clientiInactivLuni || 3) * 30;
+              filtrata = filtrata.filter((c) => {
+                if (!c.stats.ultimaComandaData) return true;
+                const zile = (acum - new Date(c.stats.ultimaComandaData).getTime()) / ZI_MS;
+                return zile >= pragZile;
+              });
             }
             const cmpNume = (a, b) =>
               (a.nume || "").localeCompare(b.nume || "", "ro", { sensitivity: "base" });
-            switch (this.clientiSortare) {
-              case "nume_asc":
-                return filtrata.slice().sort(cmpNume);
-              case "comenzi_desc":
-                return filtrata
-                  .slice()
-                  .sort((a, b) => b.stats.totalComenzi - a.stats.totalComenzi || cmpNume(a, b));
-              case "suma_desc":
-                return filtrata
-                  .slice()
-                  .sort((a, b) => b.stats.totalCheltuit - a.stats.totalCheltuit || cmpNume(a, b));
-              case "fara_telefon":
-                return filtrata.slice().sort(cmpNume);
-              case "recent":
-              default:
-                // Clienții cu cele mai recente comenzi apar primii
-                return filtrata.slice().sort((a, b) => {
-                  const da = a.stats.ultimaComandaData ? new Date(a.stats.ultimaComandaData) : new Date(0);
-                  const db = b.stats.ultimaComandaData ? new Date(b.stats.ultimaComandaData) : new Date(0);
-                  return db - da;
-                });
+            const cmpRecent = (a, b) => {
+              const da = a.stats.ultimaComandaData ? new Date(a.stats.ultimaComandaData) : new Date(0);
+              const db = b.stats.ultimaComandaData ? new Date(b.stats.ultimaComandaData) : new Date(0);
+              return db - da;
+            };
+            // Comparatoare pentru fiecare criteriu de sortare disponibil - combinabile.
+            const comparatoare = {
+              nume_asc: cmpNume,
+              comenzi_desc: (a, b) => b.stats.totalComenzi - a.stats.totalComenzi,
+              suma_desc: (a, b) => b.stats.totalCheltuit - a.stats.totalCheltuit,
+              recent: cmpRecent,
+            };
+            const criterii = (this.clientiSortareActive && this.clientiSortareActive.length
+              ? this.clientiSortareActive
+              : ["recent"]
+            ).filter((c) => comparatoare[c]);
+            return filtrata.slice().sort((a, b) => {
+              for (const c of criterii) {
+                const r = comparatoare[c](a, b);
+                if (r !== 0) return r;
+              }
+              // La egalitate pe toate criteriile alese, alfabetic ca ultim fallback.
+              return cmpNume(a, b);
+            });
+          },
+
+          // E true dacă utilizatorul a schimbat ceva față de starea implicită
+          // (altă sortare decât cea de bază, sau cel puțin un filtru activ) -
+          // folosit pentru punctul roșu de pe iconița de filtru din Clienți.
+          get clientiFiltruActiv() {
+            const sortareImplicita =
+              this.clientiSortareActive.length === 1 && this.clientiSortareActive[0] === "recent";
+            return !sortareImplicita || this.clientiFiltreActive.length > 0;
+          },
+
+          // Comută un criteriu de sortare pentru Clienți - multi-select, se pot combina
+          // oricâte deodată (ex: "Alfabetic" + "Nr. comenzi"). Ordinea în care sunt
+          // alese dă prioritatea (primul ales = criteriul principal). 'recent' e
+          // exclusiv cu restul: alegerea lui resetează combinația la starea implicită.
+          toggleClientiSortare(val) {
+            if (val === "recent") {
+              this.clientiSortareActive = ["recent"];
+              return;
             }
+            let active = this.clientiSortareActive.filter((v) => v !== "recent");
+            const idx = active.indexOf(val);
+            if (idx >= 0) active.splice(idx, 1);
+            else active.push(val);
+            this.clientiSortareActive = active.length ? active : ["recent"];
+          },
+
+          // Comută un filtru multi-select (fara_telefon / inactivi) - independent
+          // de sortare, deci se pot combina oricâte deodată.
+          toggleClientiFiltru(val) {
+            const idx = this.clientiFiltreActive.indexOf(val);
+            if (idx >= 0) this.clientiFiltreActive.splice(idx, 1);
+            else this.clientiFiltreActive.push(val);
+          },
+
+          // Mesajul afișat când combinația curentă de căutare + filtre nu are rezultate.
+          get clientiMesajListaGoala() {
+            const areFaraTelefon = this.clientiFiltreActive.includes("fara_telefon");
+            const areInactivi = this.clientiFiltreActive.includes("inactivi");
+            if (areFaraTelefon && areInactivi)
+              return "Niciun client fără telefon și inactiv în același timp. 👍";
+            if (areFaraTelefon) return "Toți clienții au un număr de telefon salvat. 👍";
+            if (areInactivi)
+              return "Niciun client inactiv de " + (this.clientiInactivLuni || 3) + "+ luni. 👍";
+            return "Niciun client găsit. Apasă „+ Client nou” pentru a adăuga primul, sau adaugă clienți direct din tab-ul de Vânzare.";
+          },
+
+          // Exportă lista de clienți curent filtrată (respectă căutarea + filtrele active)
+          // ca CSV, util pentru marketing/SMS-uri sau import în alt soft.
+          exportaClientiCSV() {
+            const lista = this.clientiFiltrati;
+            if (lista.length === 0) return alert("Nu există clienți pentru aceste filtre.");
+            const escapeCSV = (v) => {
+              const s = String(v === null || v === undefined ? "" : v);
+              if (/[";\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+              return s;
+            };
+            const antet = ["Nume", "Telefon", "Email", "Nr. comenzi", "Total cheltuit (MDL)", "Ultima comandă"];
+            const randuri = lista.map((c) => [
+              c.nume || "",
+              c.telefon || "",
+              c.email || "",
+              c.stats.totalComenzi,
+              c.stats.totalCheltuit,
+              c.stats.ultimaComandaData || "-",
+            ]);
+            const linii = [antet, ...randuri].map((r) => r.map(escapeCSV).join(";")).join("\r\n");
+            const csvContent = "\uFEFF" + linii;
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Clienti_" + new Date().toISOString().split("T")[0] + ".csv";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          },
+
+          // Exportă lista de clienți curent filtrată ca PDF tabelar (aceeași paletă
+          // vizuală cu restul imprimabilelor din aplicație).
+          exportaClientiPDF() {
+            if (!window.jspdf) return alert("Librăria PDF nu s-a încărcat. Verifică conexiunea la internet.");
+            const lista = this.clientiFiltrati;
+            if (lista.length === 0) return alert("Nu există clienți pentru aceste filtre.");
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: "mm", format: "a4" });
+            const S = (s) => this.stripDiacritics(s);
+            const culoare = [244, 63, 94];
+            const zebra = [254, 242, 242];
+
+            this.desenGradient(doc, 0, 0, 210, 28, [244, 63, 94], [190, 24, 63]);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(17);
+            doc.text("PriorityERP", 14, 14);
+            doc.setFontSize(9.5);
+            doc.setFont("helvetica", "normal");
+            doc.text("Lista clienti (" + lista.length + ")", 14, 21);
+            doc.setFontSize(7.5);
+            doc.text(new Date().toLocaleDateString("ro-RO"), 196, 21, { align: "right" });
+
+            const desenAntetTabel = (y) => {
+              doc.setFillColor(culoare[0], culoare[1], culoare[2]);
+              doc.rect(14, y, 182, 8, "F");
+              doc.setTextColor(255, 255, 255);
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(7.5);
+              doc.text("NUME", 17, y + 5.5);
+              doc.text("TELEFON", 82, y + 5.5);
+              doc.text("COMENZI", 122, y + 5.5);
+              doc.text("TOTAL CHELTUIT", 152, y + 5.5, { align: "left" });
+              return y + 8;
+            };
+
+            let y = 38;
+            y = desenAntetTabel(y);
+            lista.forEach((c, idx) => {
+              if (y + 7 > 280) {
+                doc.addPage();
+                y = 16;
+                y = desenAntetTabel(y);
+              }
+              if (idx % 2 === 0) {
+                doc.setFillColor(zebra[0], zebra[1], zebra[2]);
+                doc.rect(14, y, 182, 7, "F");
+              }
+              doc.setTextColor(30, 41, 59);
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(8);
+              doc.text(S(c.nume || "-").slice(0, 32), 17, y + 4.8);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(71, 85, 105);
+              doc.text(c.telefon || "-", 82, y + 4.8);
+              doc.text(String(c.stats.totalComenzi), 122, y + 4.8);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(225, 29, 72);
+              doc.text(this.formatMDLPdf(c.stats.totalCheltuit), 152, y + 4.8);
+              y += 7;
+            });
+
+            this.desenFooterToatePaginile(doc, culoare, new Date().toLocaleString("ro-RO"));
+            doc.save("Clienti_" + new Date().toISOString().split("T")[0] + ".pdf");
+          },
+
+          // Extras de cont pentru UN singur client (Dashboard > Rapoarte > Extras cont client):
+          // tot istoricul lui de comenzi + soldul restant (creanțe neîncasate), gata de trimis
+          // clientului. Reutilizează getStatsClient/getIstoricVanzariClient, deja folosite în fișa
+          // clientului, deci cifrele rămân identice cu ce se vede acolo.
+          descarcaExtrasClientPDF(clientId) {
+            if (!window.jspdf) return alert("Librăria PDF nu s-a încărcat. Verifică conexiunea la internet.");
+            const client = (this.clienti || []).find((c) => c.id === clientId);
+            if (!client) return alert("Alege mai întâi un client.");
+            const istoric = this.getIstoricVanzariClient(client.nume);
+            if (istoric.length === 0)
+              return alert("Acest client nu are încă nicio comandă înregistrată.");
+            const stats = this.getStatsClient(client.nume);
+            const soldRestant = (this.datornici || [])
+              .filter(
+                (d) =>
+                  (d.client_nume || "").trim().toLowerCase() ===
+                  client.nume.trim().toLowerCase(),
+              )
+              .reduce((s, d) => s + (d.suma_ramasa || 0), 0);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: "mm", format: "a4" });
+            const S = (s) => this.stripDiacritics(s);
+            const culoare = [244, 63, 94];
+            const zebra = [254, 242, 242];
+
+            this.desenGradient(doc, 0, 0, 210, 30, [244, 63, 94], [190, 24, 63]);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(17);
+            doc.text("PriorityERP", 14, 14);
+            doc.setFontSize(9.5);
+            doc.setFont("helvetica", "normal");
+            doc.text("Extras Cont - " + S(client.nume), 14, 21);
+            doc.setFontSize(7.5);
+            doc.text("Generat: " + new Date().toLocaleDateString("ro-RO"), 196, 21, { align: "right" });
+            const contactBits = [client.telefon, client.email, client.adresa]
+              .filter(Boolean)
+              .map(S);
+            if (contactBits.length) doc.text(contactBits.join("  ·  "), 196, 26, { align: "right" });
+
+            // --- 4 cutii de sumar: comenzi, total cheltuit, sold restant, ultima comandă ---
+            let y = 38;
+            const boxTotal = (label, text, x, culoareVal) => {
+              doc.setFillColor(248, 250, 252);
+              doc.setDrawColor(226, 232, 240);
+              doc.roundedRect(x, y, 42, 22, 3, 3, "FD");
+              doc.setFontSize(6.5);
+              doc.setTextColor(148, 163, 184);
+              doc.setFont("helvetica", "normal");
+              doc.text(S(label), x + 4, y + 8);
+              doc.setFontSize(10.5);
+              doc.setTextColor(culoareVal[0], culoareVal[1], culoareVal[2]);
+              doc.setFont("helvetica", "bold");
+              doc.text(S(text), x + 4, y + 18);
+            };
+            boxTotal("COMENZI", String(stats.totalComenzi), 14, [30, 41, 59]);
+            boxTotal("TOTAL CHELTUIT", this.formatMDLPdf(stats.totalCheltuit), 59, [5, 150, 105]);
+            boxTotal(
+              "SOLD RESTANT",
+              this.formatMDLPdf(soldRestant),
+              104,
+              soldRestant > 0.5 ? [220, 38, 38] : [30, 41, 59],
+            );
+            boxTotal(
+              "ULTIMA COMANDA",
+              stats.ultimaComandaData ? this.formatDataScurta(stats.ultimaComandaData) : "-",
+              149,
+              [30, 41, 59],
+            );
+            y += 30;
+
+            // --- Tabel cu toate comenzile clientului ---
+            const desenAntetTabel = (yy) => {
+              doc.setFillColor(culoare[0], culoare[1], culoare[2]);
+              doc.rect(14, yy, 182, 8, "F");
+              doc.setTextColor(255, 255, 255);
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(7.5);
+              doc.text("DATA", 17, yy + 5.5);
+              doc.text("TOTAL", 100, yy + 5.5);
+              doc.text("STATUS", 150, yy + 5.5);
+              return yy + 8;
+            };
+            y = desenAntetTabel(y);
+            istoric.forEach((v, idx) => {
+              if (y + 7 > 272) {
+                doc.addPage();
+                y = 16;
+                y = desenAntetTabel(y);
+              }
+              if (idx % 2 === 0) {
+                doc.setFillColor(zebra[0], zebra[1], zebra[2]);
+                doc.rect(14, y, 182, 7, "F");
+              }
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(8);
+              doc.setTextColor(30, 41, 59);
+              doc.text(this.formatDataScurta(v.data), 17, y + 4.8);
+              doc.setFont("helvetica", "bold");
+              doc.text(this.formatMDLPdf(v.total), 100, y + 4.8);
+              const platit = v.status_plata === "platit";
+              doc.setTextColor(platit ? 5 : 220, platit ? 150 : 38, platit ? 105 : 38);
+              doc.setFont("helvetica", "normal");
+              doc.text(S(platit ? "Achitat" : "Neincasat"), 150, y + 4.8);
+              y += 7;
+            });
+
+            // --- Produse preferate (dacă există) ---
+            if (stats.topProduse && stats.topProduse.length) {
+              y += 6;
+              if (y > 265) {
+                doc.addPage();
+                y = 16;
+              }
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(8.5);
+              doc.setTextColor(51, 65, 85);
+              doc.text(S("Produse preferate"), 14, y);
+              y += 5;
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(7.5);
+              doc.setTextColor(71, 85, 105);
+              stats.topProduse.forEach((p) => {
+                doc.text("- " + S(p.denumire) + " (" + p.cantitate + " buc)", 17, y);
+                y += 4.5;
+              });
+            }
+
+            this.desenFooterToatePaginile(doc, culoare, new Date().toLocaleString("ro-RO"));
+            doc.save(
+              "Extras_Cont_" +
+                S(client.nume).replace(/[^a-zA-Z0-9]+/g, "_") +
+                "_" +
+                new Date().toISOString().split("T")[0] +
+                ".pdf",
+            );
           },
 
           // Calculează statistici din istoricul REAL de vânzări (flow_sale + flow_sale_item) pentru un
