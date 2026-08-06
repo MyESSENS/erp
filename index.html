@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PriorityERP - Dashboard</title>
+    <title>StockFlow - Dashboard</title>
     <link rel="icon" type="image/x-icon" href="icon-192.png">
 
     <!-- ===== PWA: face aplicatia instalabila, fara tab de browser ===== -->
@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="PriorityERP" />
+    <meta name="apple-mobile-web-app-title" content="StockFlow" />
     <!-- ================================================================ -->
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1470,7 +1470,7 @@
           <h1
             class="text-md font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-500 to-[#8a1538] font-serif italic leading-none"
           >
-            Priority ERP
+            StockFlow
           </h1>
           <span
             class="text-[8px] font-sans font-semibold not-italic tracking-wider text-slate-400 bg-slate-100 border border-slate-200/70 px-1.5 py-0.5 rounded-full leading-none"
@@ -1790,7 +1790,7 @@
         </div>
       </template>
 
-      <div class="relative" @click.outside="headerMenuDeschis = false">
+      <div class="relative ml-2" @click.outside="headerMenuDeschis = false">
         <button
           @click="headerMenuDeschis = !headerMenuDeschis"
           title="Meniu"
@@ -2920,7 +2920,7 @@
           },
 
           promptSistem() {
-            return `Ești ${this.numeAsistent}, asistentul AI al aplicației Priority ERP (gestiune stoc, vânzări, clienți) a unui magazin mic. Ești întruchipat vizual ca un mic robot roz, prietenos și simpatic, cu antenă și ochi mari - utilizatorul te vede și te poate striga pe nume.
+            return `Ești ${this.numeAsistent}, asistentul AI al aplicației StockFlow (gestiune stoc, vânzări, clienți) a unui magazin mic. Ești întruchipat vizual ca un mic robot roz, prietenos și simpatic, cu antenă și ochi mari - utilizatorul te vede și te poate striga pe nume.
 Data curentă: ${new Date().toLocaleDateString("ro-RO")}.
 Vorbești română, ca un coleg de încredere care chiar înțelege afacerea utilizatorului - prietenos, dar profesionist.
 Dacă utilizatorul te strigă pe nume (${this.numeAsistent}) sau te întreabă cum te cheamă/cine ești, reacționează firesc și cu simpatie (ex: confirmă că ești aici, cu puțin umor sau afecțiune), fără să exagerezi sau să repeți asta la fiecare mesaj - doar când chiar vine vorba de nume.
@@ -11796,6 +11796,22 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
   }
 ];
 
+      // Migrare unică: aplicația se numea "PriorityERP" înainte, iar setările de backup
+      // automat erau salvate sub cheile vechi. Le mutăm o singură dată sub noile chei
+      // "stockflow..." ca utilizatorii care aveau deja backup automat activ să nu-l piardă.
+      (function migreazaChileVechiLocalStorage() {
+        const vechiActiv = localStorage.getItem("priorityErpBackupAutomat");
+        if (vechiActiv !== null && localStorage.getItem("stockflowBackupAutomat") === null) {
+          localStorage.setItem("stockflowBackupAutomat", vechiActiv);
+          localStorage.removeItem("priorityErpBackupAutomat");
+        }
+        const vechiData = localStorage.getItem("priorityErpLastBackup");
+        if (vechiData !== null && localStorage.getItem("stockflowLastBackup") === null) {
+          localStorage.setItem("stockflowLastBackup", vechiData);
+          localStorage.removeItem("priorityErpLastBackup");
+        }
+      })();
+
       function erpSystem() {
         return {
           pb: null,
@@ -12002,8 +12018,8 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
 
           // --- Backup bază de date (descărcare copie JSON completă, + backup automat local) ---
           backupInCurs: false,
-          backupAutomatActiv: localStorage.getItem("priorityErpBackupAutomat") === "1",
-          ultimulBackup: localStorage.getItem("priorityErpLastBackup") || null,
+          backupAutomatActiv: localStorage.getItem("stockflowBackupAutomat") === "1",
+          ultimulBackup: localStorage.getItem("stockflowLastBackup") || null,
 
           selectedCreantaId: "",
           creantaModalActiv: false,
@@ -13995,7 +14011,7 @@ culoareAvatarClient(nume) {
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(17);
-            doc.text("PriorityERP", 14, 14);
+            doc.text("StockFlow", 14, 14);
             doc.setFontSize(9.5);
             doc.setFont("helvetica", "normal");
             doc.text(
@@ -16210,7 +16226,7 @@ culoareAvatarClient(nume) {
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(17);
-            doc.text("PriorityERP", 14, 14);
+            doc.text("StockFlow", 14, 14);
             doc.setFontSize(9.5);
             doc.setFont("helvetica", "normal");
             doc.text("Lista clienti (" + lista.length + ")", 14, 21);
@@ -16290,7 +16306,7 @@ culoareAvatarClient(nume) {
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(17);
-            doc.text("PriorityERP", 14, 14);
+            doc.text("StockFlow", 14, 14);
             doc.setFontSize(9.5);
             doc.setFont("helvetica", "normal");
             doc.text("Extras Cont - " + S(client.nume), 14, 21);
@@ -16884,7 +16900,7 @@ culoareAvatarClient(nume) {
               doc.setFontSize(7);
               doc.setTextColor(150, 150, 150);
               doc.text(
-                S("Generat automat de PriorityERP" + (sufixText ? " - " + sufixText : "")),
+                S("Generat automat de StockFlow" + (sufixText ? " - " + sufixText : "")),
                 14,
                 289,
               );
@@ -16934,7 +16950,7 @@ culoareAvatarClient(nume) {
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(19);
-            doc.text("PriorityERP", 14, 15);
+            doc.text("StockFlow", 14, 15);
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.text(esteVanzare ? "Bon de vanzare" : "Factura de receptie / aprovizionare", 14, 22);
@@ -17223,7 +17239,7 @@ culoareAvatarClient(nume) {
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(17);
-            doc.text("PriorityERP", 14, 14);
+            doc.text("StockFlow", 14, 14);
             doc.setFontSize(9.5);
             doc.setFont("helvetica", "normal");
             doc.text("Extras Registru", 14, 21);
@@ -17370,7 +17386,7 @@ culoareAvatarClient(nume) {
               };
 
               const backup = {
-                aplicatie: "PriorityERP",
+                aplicatie: "StockFlow",
                 generat_la: new Date().toISOString(),
                 // Schema completă a colecțiilor (structură), utilă pentru a recrea baza de date
                 // de la zero într-un PocketBase nou, prin Import Collections din Admin.
@@ -17428,14 +17444,14 @@ culoareAvatarClient(nume) {
               const a = document.createElement("a");
               a.href = url;
               a.download =
-                "PriorityERP_Backup_" + new Date().toISOString().split("T")[0] + ".zip";
+                "StockFlow_Backup_" + new Date().toISOString().split("T")[0] + ".zip";
               document.body.appendChild(a);
               a.click();
               a.remove();
               URL.revokeObjectURL(url);
 
               const acum = new Date().toISOString();
-              localStorage.setItem("priorityErpLastBackup", acum);
+              localStorage.setItem("stockflowLastBackup", acum);
               this.ultimulBackup = acum;
             } catch (e) {
               alert("Eroare la generarea backup-ului: " + (e?.message || e));
@@ -17449,7 +17465,7 @@ culoareAvatarClient(nume) {
           toggleBackupAutomat() {
             this.backupAutomatActiv = !this.backupAutomatActiv;
             localStorage.setItem(
-              "priorityErpBackupAutomat",
+              "stockflowBackupAutomat",
               this.backupAutomatActiv ? "1" : "0",
             );
           },
@@ -17499,7 +17515,7 @@ culoareAvatarClient(nume) {
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(17);
-            doc.text("PriorityERP", 14, 14);
+            doc.text("StockFlow", 14, 14);
             doc.setFontSize(9.5);
             doc.setFont("helvetica", "normal");
             doc.text("Statistica lunara", 14, 21);
