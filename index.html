@@ -17724,22 +17724,65 @@ culoareAvatarClient(nume) {
                   ? { formatsToSupport: formate, verbose: false }
                   : undefined,
               );
-              await this.html5Qrcode.start(
+              const opțiuniCameră = {
+                fps: 12,
+                qrbox: { width: 260, height: 140 },
+                // Cerem 3:4 ca preferință (majoritatea camerelor de telefon o vor respecta
+                // aproximativ), dar NU ne bazăm strict pe asta - unele surse (ex. camere
+                // virtuale/webcam gen OBS) ignoră constrângerea și trimit tot 16:9.
+                videoConstraints: { aspectRatio: { ideal: 0.75 } },
+              };
+              // Găsește id-ul camerei din spate căutând în etichetele dispozitivelor
+              // (Android/desktop expun de obicei cuvinte precum "back"/"rear" în label).
+              // Facem asta ca fallback pentru cazul în care
+              // { facingMode: { exact: "environment" } } eșuează mai jos.
+              const găseșteIdCameraSpate = async () => {
+                try {
+                  const camere = await Html5Qrcode.getCameras();
+                  if (!camere || !camere.length) return null;
+                  const spate = camere.find((c) =>
+                    /back|rear|environment|spate/i.test(c.label || ""),
+                  );
+                  // Dacă nu găsim un label clar și avem mai multe camere, ultima din listă
+                  // e de obicei camera principală din spate pe telefoane Android.
+                  return spate ? spate.id : camere[camere.length - 1].id;
+                } catch (e) {
+                  return null;
+                }
+              };
+              try {
                 // Primul parametru acceptă o SINGURĂ cheie (facingMode SAU deviceId) -
                 // orice constrângere suplimentară (ex. aspectRatio) trebuie pusă în
-                // videoConstraints, în cel de-al doilea parametru.
-                { facingMode: "environment" },
-                {
-                  fps: 12,
-                  qrbox: { width: 260, height: 140 },
-                  // Cerem 3:4 ca preferință (majoritatea camerelor de telefon o vor respecta
-                  // aproximativ), dar NU ne bazăm strict pe asta - unele surse (ex. camere
-                  // virtuale/webcam gen OBS) ignoră constrângerea și trimit tot 16:9.
-                  videoConstraints: { aspectRatio: { ideal: 0.75 } },
-                },
-                (t) => this.pePeDecodareBarcode(t),
-                () => {},
-              );
+                // videoConstraints, în cel de-al doilea parametru. Folosim "exact" ca să
+                // FORȚĂM camera din spate - simplul { facingMode: "environment" } e doar
+                // o preferință și pe unele telefoane pornea totuși camera din față.
+                await this.html5Qrcode.start(
+                  { facingMode: { exact: "environment" } },
+                  opțiuniCameră,
+                  (t) => this.pePeDecodareBarcode(t),
+                  () => {},
+                );
+              } catch (e) {
+                // Fallback: unele browsere/telefoane nu suportă "exact" - încercăm să
+                // pornim direct camera din spate identificată după deviceId.
+                const idSpate = await găseșteIdCameraSpate();
+                if (idSpate) {
+                  await this.html5Qrcode.start(
+                    idSpate,
+                    opțiuniCameră,
+                    (t) => this.pePeDecodareBarcode(t),
+                    () => {},
+                  );
+                } else {
+                  // Ultimă variantă: preferința simplă (fără "exact").
+                  await this.html5Qrcode.start(
+                    { facingMode: "environment" },
+                    opțiuniCameră,
+                    (t) => this.pePeDecodareBarcode(t),
+                    () => {},
+                  );
+                }
+              }
               this.scanCameraPornita = true;
               // Adaptăm containerul la aspectul REAL livrat de cameră (nu presupunem 3:4) -
               // astfel object-cover nu mai trebuie să taie/"zoom-eze" agresiv atunci când
