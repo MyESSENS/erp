@@ -1,0 +1,3065 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESSENS Partner Hub</title>
+
+    <meta name="description"
+        content="Platforma oficială creată pentru accesul rapid la ghiduri esențiale, înregistrări directe și oferte exclusive.">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://myessens.github.io/hub/">
+    <meta property="og:title" content="ESSENS Partner Hub">
+    <meta property="og:description"
+        content="Platforma oficială creată pentru accesul rapid la ghiduri esențiale, înregistrări directe și oferte exclusive.">
+    <meta property="og:image" content="https://myessens.github.io/hub/logo_300x300.png">
+    <meta property="og:site_name" content="ESSENS Partner Hub">
+    <meta property="og:locale" content="ro_RO">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="ESSENS Partner Hub">
+    <meta name="twitter:description"
+        content="Platforma oficială creată pentru accesul rapid la ghiduri esențiale, înregistrări directe și oferte exclusive.">
+    <meta name="twitter:image" content="https://myessens.github.io/hub/logo_300x300.png">
+
+    <script defer src="https://cloud.umami.is/script.js"
+        data-website-id="2bb99776-312e-4518-8df2-f5f21eb3b726"></script>
+
+    <link rel="icon" type="image/x-icon" href="logo_300x300.png">
+
+    <style>
+        /* --- 1. STILURI GENERALE ȘI RESET --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button {
+            border: none;
+            background: none;
+            font: inherit;
+            color: inherit;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        body {
+            background-color: #fcfaff;
+            color: #2d2638;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.loading {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* --- 2. ECRANUL HERO MINIMALIST --- */
+        .hero-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            background-color: #fcfaff;
+            z-index: 10;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .welcome-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s forwards 0.2s;
+            color: #1a1124;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .loader-container {
+            width: 160px;
+            position: relative;
+            margin-top: 40px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards 0.5s;
+            transition: opacity 0.3s ease;
+        }
+
+        .loader-bar-bg {
+            width: 100%;
+            height: 4px;
+            background-color: #eaddff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #8a4fff;
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        .loader-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #8a4fff;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        body.scrolled .hero-section {
+            height: 65px;
+            border-bottom: 1px solid rgba(138, 79, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+            background-color: rgba(252, 250, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0 15px;
+        }
+
+        body.scrolled .welcome-title {
+            font-size: 1.15rem;
+        }
+
+        body.scrolled .loader-container {
+            opacity: 0 !important;
+            visibility: hidden;
+            display: none !important;
+        }
+
+        body.scrolled .welcome-title .heart-svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* --- 3. CONȚINUTUL PRINCIPAL --- */
+        .main-content {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 95px 16px 30px 16px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            flex: 1;
+        }
+
+        body.scrolled .main-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .profile-avatar-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ffffff;
+            box-shadow: 0 8px 20px rgba(138, 79, 255, 0.1);
+            background-color: #f1eaff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4a3b5c;
+            padding: 4px;
+        }
+
+        .intro-box {
+            background: linear-gradient(135deg, #ffffff, #fbf9ff);
+            border: 1px solid rgba(138, 79, 255, 0.08);
+            border-radius: 16px;
+            padding: 55px 18px 20px 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(138, 79, 255, 0.02);
+            text-align: center;
+        }
+
+        .intro-box p {
+            font-size: 0.95rem;
+            color: #5c5266;
+            line-height: 1.55;
+        }
+
+        /* --- CARDURI --- */
+        .card {
+            position: relative;
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 14px;
+            padding: 16px;
+            box-shadow: 0 4px 16px rgba(138, 79, 255, 0.03);
+            border: 1px solid rgba(138, 79, 255, 0.05);
+            cursor: pointer;
+            display: grid;
+            grid-template-rows: auto 0fr;
+            transition: grid-template-rows 0.5s cubic-bezier(0.25, 1, 0.5, 1),
+                transform 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                box-shadow 0.3s ease;
+            will-change: grid-template-rows, transform;
+        }
+
+        .card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(138, 79, 255, 0.05);
+        }
+
+        .app-badge {
+            position: absolute;
+            top: -6px;
+            right: 20px;
+            background-color: #8a4fff;
+            color: white;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(138, 79, 255, 0.3);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            z-index: 5;
+        }
+
+        .app-badge.alt {
+            background-color: #7a6e85;
+            box-shadow: 0 2px 8px rgba(122, 110, 133, 0.25);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            grid-row: 1;
+        }
+
+        .card-title-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        /* Cand sageata e aliniata cu randul de titlu (.align-top, pt. carduri cu
+           descriere), aliniem si iconița la fel, ca sa nu mai para "impinsa" in
+           alta pozitie fata de sageata. Clasa explicita (nu :has()) pentru
+           compatibilitate maxima pe telefon. */
+        .card-title-block.icon-align-top {
+            align-items: flex-start;
+        }
+
+        .card-text-holder {
+            min-width: 0;
+        }
+
+        .card-icon-container {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1124;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card p.sub-label {
+            font-size: 0.76rem;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .arrow-container {
+            width: 16px;
+            height: 16px;
+            color: #b2a4bf;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        .card-wrapper {
+            grid-row: 2;
+            overflow: hidden;
+        }
+
+        .card-body {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            padding-top: 0;
+        }
+
+        .card.active {
+            grid-template-rows: auto 1fr;
+        }
+
+        .card.active .card-body {
+            opacity: 1;
+            transform: translateY(0);
+            padding-top: 14px;
+            margin-top: 14px;
+            border-top: 1px dashed #efeaf5;
+            transition: opacity 0.4s ease 0.1s, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.05s;
+        }
+
+        .card.active .arrow-container {
+            transform: rotate(180deg);
+            color: #8a4fff;
+        }
+
+        /* Cand titlul cardului are si un sub-label (2 randuri), sageata se aliniaza
+           cu randul de titlu, la fel ca la cardurile cu un singur rand. */
+        .arrow-container.align-top {
+            align-self: flex-start;
+            margin-top: 4px;
+        }
+
+        .card.active .arrow-container.align-top {
+            margin-top: 4px;
+        }
+
+        .info-callout-box {
+            background-color: #f9f6fe;
+            border-left: 4px solid #8a4fff;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            text-align: left;
+            box-shadow: inset 0 0 8px rgba(138, 79, 255, 0.02);
+        }
+
+        .info-callout-icon {
+            color: #8a4fff;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .info-callout-text {
+            font-size: 0.88rem;
+            color: #4a3b5c;
+            line-height: 1.55;
+        }
+
+        .tutorial-heading {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #1a1124;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 22px 0 14px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tutorial-heading::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(138, 79, 255, 0.15), transparent);
+        }
+
+        .step-block {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        .step-block:last-child {
+            margin-bottom: 15px;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .step-number {
+            background-color: #f1eaff;
+            color: #8a4fff;
+            font-weight: 700;
+            font-size: 0.8rem;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2d2638;
+        }
+
+        .step-desc {
+            font-size: 0.86rem;
+            color: #695d75;
+            line-height: 1.5;
+            padding-left: 32px;
+        }
+
+        .highlight-text {
+            color: #8a4fff;
+            font-weight: 600;
+        }
+
+        /* --- STILURI GRILĂ INTERNAȚIONALĂ --- */
+        .international-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 4px 2px;
+        }
+
+        .country-bubble {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f8f5fc;
+            border: 1px solid rgba(138, 79, 255, 0.05);
+            text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 14px;
+            transition: all 0.25s ease;
+        }
+
+        .country-bubble:hover {
+            background-color: #f1eaff;
+            border-color: rgba(138, 79, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(138, 79, 255, 0.06);
+        }
+
+        .country-bubble:active {
+            transform: scale(0.97);
+        }
+
+        .country-left-info {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .flag-holder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 18px;
+            background: #eee;
+            border-radius: 3px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            margin-right: 10px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .country-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #4a3b5c;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Codul ISO din dreapta stilizat elegant */
+        .country-iso-code {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #b2a4bf;
+            background-color: rgba(138, 79, 255, 0.04);
+            padding: 2px 5px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+            margin-left: 6px;
+            border: 1px solid rgba(138, 79, 255, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .country-bubble:hover .country-name {
+            color: #8a4fff;
+        }
+
+        .country-bubble:hover .country-iso-code {
+            color: #8a4fff;
+            background-color: #ffffff;
+            border-color: rgba(138, 79, 255, 0.15);
+        }
+
+        /* --- BUTOANE ȘI INLINE SVG --- */
+        .sub-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f8f5fc;
+            color: #4a3b5c;
+            text-decoration: none;
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: background-color 0.2s, background 0.2s, transform 0.2s;
+            position: relative;
+        }
+
+        /* PANGLICĂ PREMIUM PE COLȚ (RIBBON MILITAR/VETERAN CU SCHIMBARE DRAPEL) */
+        .sub-button.primary-action {
+            background-color: #8a4fff;
+            color: white;
+            box-shadow: 0 4px 12px rgba(138, 79, 255, 0.15);
+            padding: 16px 55px 16px 20px; /* Spațiu în dreapta crescut special pentru a face loc panglicii */
+            text-align: left;
+            justify-content: flex-start;
+            overflow: hidden; /* Taie panglica la marginea butonului rotunjit */
+        }
+
+        .sub-button.primary-action .btn-inner-content {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .sub-button:last-child {
+            margin-bottom: 0;
+        }
+
+        .sub-button:hover {
+            background-color: #f1eaff;
+            color: #8a4fff;
+        }
+
+        .sub-button.primary-action:hover {
+            background-color: #793eed;
+            color: white;
+        }
+
+        .sub-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Containerul structural pentru panglică */
+        .ribbon-corner-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Panglica textilă oblică din CSS */
+        .ribbon-flag-strip {
+            position: absolute;
+            top: 7px;
+            right: -17px;
+            width: 62px;
+            height: 18px;
+            transform: rotate(45deg);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            /* Imagine default integrată: Steagul Moldovei (MD) */
+            background-image: url('https://flagcdn.com/w80/md.png');
+            transition: background-image 0.4s ease;
+        }
+
+        .btn-inner-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .btn-inner-content span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.88rem;
+        }
+
+        .svg-icon {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .emoji-style-svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .heart-svg {
+            width: 32px;
+            height: 32px;
+            fill: url(#heartGradient);
+            filter: drop-shadow(0 2px 4px rgba(138, 79, 255, 0.2));
+            transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1), height 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+            margin-bottom: 10px;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .support-section {
+            margin-top: 30px;
+            text-align: center;
+            padding: 15px 5px 5px 5px;
+        }
+
+        .support-section p {
+            font-size: 0.88rem;
+            color: #7a6e85;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .split-chat-button {
+            display: flex;
+            width: 100%;
+            max-width: 340px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid rgba(138, 79, 255, 0.12);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(138, 79, 255, 0.04);
+            position: relative;
+        }
+
+        .chat-half {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            padding: 14px 10px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .chat-whatsapp {
+            color: #1ebd59;
+        }
+
+        .chat-messenger {
+            color: #0084FF;
+        }
+
+        .chat-whatsapp:hover,
+        .chat-whatsapp:active {
+            background-color: rgba(30, 189, 89, 0.04);
+        }
+
+        .chat-messenger:hover,
+        .chat-messenger:active {
+            background-color: rgba(0, 132, 255, 0.04);
+        }
+
+        .split-divider {
+            position: absolute;
+            left: 50%;
+            top: 20%;
+            width: 1px;
+            height: 60%;
+            background-color: rgba(138, 79, 255, 0.12);
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+
+        .custom-footer {
+            text-align: center;
+            padding: 20px 16px;
+            margin-top: auto;
+            border-top: 1px solid rgba(138, 79, 255, 0.04);
+            background-color: #fbf9ff;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        body.scrolled .custom-footer {
+            opacity: 1;
+        }
+
+        .footer-text {
+            font-size: 0.75rem;
+            color: #a396b0;
+            letter-spacing: 0.2px;
+            line-height: 1.5;
+        }
+
+        .footer-brand {
+            font-weight: 600;
+            color: #8a4fff;
+        }
+
+        @media (max-width: 360px) {
+            .welcome-title {
+                font-size: 1.8rem;
+            }
+
+            .intro-box p {
+                font-size: 0.9rem;
+            }
+
+            .card h3 {
+                font-size: 0.88rem;
+            }
+
+            .sub-button {
+                font-size: 0.82rem;
+                padding: 10px 12px;
+            }
+
+            .chat-half {
+                font-size: 0.82rem;
+                padding: 12px 8px;
+            }
+
+            .international-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+            /* ============================================================
+           10. CARD ÎN PAGINĂ — DESCOPERĂ PRODUSE (stil feed video)
+        ============================================================ */
+        .discover-hero-card {
+            position: relative;
+            isolation: isolate;
+        }
+
+        .discover-sheen-wrap {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            border-radius: inherit;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .discover-sheen-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 45%;
+            height: 100%;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-20deg);
+            animation: discoverSheen 3.6s ease-in-out infinite;
+        }
+
+        .discover-hero-card .card-header {
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes discoverSheen {
+            0% {
+                left: -75%;
+            }
+
+            45%,
+            100% {
+                left: 130%;
+            }
+        }
+
+        .app-badge.discover-badge-pop {
+            background-color: #ff3b3b;
+            box-shadow: 0 2px 8px rgba(255, 59, 59, 0.35);
+            animation: discoverBadgePop 1.8s ease-in-out infinite;
+        }
+
+        @keyframes discoverBadgePop {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: hue-rotate(0deg);
+                box-shadow: 0 2px 8px rgba(255, 59, 59, 0.35);
+            }
+
+            25% {
+                filter: hue-rotate(-12deg);
+            }
+
+            50% {
+                transform: scale(1.12);
+                filter: hue-rotate(18deg);
+                box-shadow: 0 2px 16px rgba(255, 59, 59, 0.65);
+            }
+
+            75% {
+                filter: hue-rotate(-6deg);
+            }
+        }
+
+        /* ============================================================
+           11. DESCOPERĂ PRODUSE — FEED FULLSCREEN TIP REELS
+        ============================================================ */
+        .discover-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000000;
+            z-index: 900;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1), visibility 0s linear 0.35s;
+        }
+
+        .discover-overlay.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1), visibility 0s linear 0s;
+        }
+
+        .discover-frame {
+            width: 100%;
+            max-width: 460px;
+            height: 100%;
+            position: relative;
+            margin: 0 auto;
+            background: #000;
+            transform: scale(0.97);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease;
+        }
+
+        .discover-overlay.open .discover-frame {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        /* Header fix: sageata inapoi (stanga) + titlu "For You" centrat.
+           --topbar-h e folosit mai jos ca sa aliniem dots-urile si butonul
+           de sunet exact sub acest header, fara suprapuneri. */
+        .discover-frame {
+            --topbar-h: 56px;
+        }
+
+        .discover-topbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 35;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: max(14px, env(safe-area-inset-top)) 14px 10px 14px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+        }
+
+        .discover-back-btn {
+            pointer-events: auto;
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(20, 20, 24, 0.4);
+            backdrop-filter: blur(14px) saturate(160%);
+            -webkit-backdrop-filter: blur(14px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+        }
+
+        .discover-back-btn:active {
+            transform: scale(0.86);
+        }
+
+        .discover-back-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: #ffffff;
+            stroke-width: 2.4;
+            fill: none;
+        }
+
+        .discover-topbar-title {
+            flex: 1;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.95rem;
+            letter-spacing: 0.2px;
+            color: #ffffff;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75), 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .discover-topbar-spacer {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+        }
+
+        .discover-feed {
+            height: 100%;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+        }
+
+        .discover-feed::-webkit-scrollbar {
+            display: none;
+        }
+
+        .reel-slide {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            overflow: hidden;
+            background: #0a0a0a;
+        }
+
+        .reel-media-wrap {
+            position: absolute;
+            inset: 0;
+        }
+
+        .reel-media {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transform: scale(1.04);
+            transition: opacity 0.45s cubic-bezier(0.25, 1, 0.5, 1), transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            background: linear-gradient(135deg, #1a1a1a, #2c2c2c);
+        }
+
+        .reel-media.is-current {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .reel-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .reel-media img.img-broken {
+            display: none;
+        }
+
+        .reel-media video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            pointer-events: none;
+        }
+
+        .reel-media video::-webkit-media-controls {
+            display: none !important;
+        }
+
+        .reel-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .reel-mute-btn {
+            position: absolute;
+            top: max(14px, env(safe-area-inset-top));
+            right: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(20, 20, 24, 0.38);
+            backdrop-filter: blur(14px) saturate(160%);
+            -webkit-backdrop-filter: blur(14px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 6;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+        }
+
+        .reel-mute-btn:active {
+            transform: scale(0.86);
+        }
+
+        .reel-mute-btn svg {
+            width: 15px;
+            height: 15px;
+            fill: #ffffff;
+        }
+
+        /* --- Prompt central de activare sunet (stil TikTok) --- */
+        .sound-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 26px;
+            border-radius: 22px;
+            background: rgba(20, 18, 26, 0.5);
+            backdrop-filter: blur(18px) saturate(180%);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+        }
+
+        .sound-prompt.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            animation: soundPromptPulse 1.8s ease-in-out infinite;
+        }
+
+        .sound-prompt-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sound-prompt-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: #ffffff;
+        }
+
+        .sound-prompt span {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+        }
+
+        @keyframes soundPromptPulse {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+        }
+
+        .reel-pause-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 6;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .reel-pause-icon.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .reel-pause-icon svg {
+            width: 26px;
+            height: 26px;
+            fill: #ffffff;
+            margin-left: 2px;
+        }
+
+        .reel-tap-zones {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            z-index: 5;
+        }
+
+        .reel-tap-zones div {
+            flex: 1;
+            height: 100%;
+        }
+
+        /* Gradientul de jos: minim cât timp descrierea e inchisa (doar cat sa
+           se citeasca numele/pretul), si se extinde cu o animatie lina cand
+           utilizatorul apasa "Citeste mai mult", ca textul suplimentar sa
+           ramana lizibil peste orice fotografie. */
+        .reel-scrim-base {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 30%;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.28) 55%, rgba(0, 0, 0, 0.62) 100%);
+            pointer-events: none;
+            z-index: 6;
+            transition: height 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .reel-scrim-expand {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 30%;
+            opacity: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.38) 38%, rgba(0, 0, 0, 0.88) 100%);
+            pointer-events: none;
+            z-index: 6;
+            transition: height 0.45s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.35s ease;
+        }
+
+        .reel-slide.desc-open .reel-scrim-base {
+            height: 40%;
+        }
+
+        .reel-slide.desc-open .reel-scrim-expand {
+            height: 66%;
+            opacity: 1;
+        }
+
+        .reel-scrim-top {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 70px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
+            pointer-events: none;
+            z-index: 6;
+        }
+
+        .reel-progress {
+            position: absolute;
+            top: calc(max(14px, env(safe-area-inset-top)) + var(--topbar-h, 56px));
+            left: 14px;
+            right: 14px;
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            z-index: 25;
+            pointer-events: none;
+        }
+
+        .reel-progress-dot {
+            flex: 1;
+            max-width: 46px;
+            height: 3.5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.28);
+            overflow: hidden;
+            box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.15);
+        }
+
+        .reel-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffffff, #f1e9ff);
+            border-radius: 4px;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.55);
+        }
+
+        .reel-actions {
+            position: absolute;
+            right: 14px;
+            bottom: 104px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+            z-index: 25;
+        }
+
+        .reel-action {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: #ffffff;
+        }
+
+        .reel-action-btn {
+            width: auto;
+            height: auto;
+            background: none;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .reel-action-btn:active {
+            transform: scale(0.86);
+            transition: transform 0.1s ease;
+        }
+
+        .reel-action-btn svg {
+            width: 27px;
+            height: 27px;
+            stroke: #ffffff;
+            fill: none;
+            stroke-width: 1.8;
+            filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.35));
+        }
+
+        .reel-action.is-save .reel-action-btn svg {
+            transition: fill 0.2s cubic-bezier(0.25, 1, 0.5, 1), stroke 0.2s cubic-bezier(0.25, 1, 0.5, 1), transform 0.2s ease;
+        }
+
+        .reel-action.is-save.is-saved .reel-action-btn svg {
+            fill: #ff2d55;
+            stroke: #ff2d55;
+            transform: scale(1.12);
+        }
+
+        .reel-action span {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-align: center;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+            max-width: 64px;
+            line-height: 1.15;
+        }
+
+        .reel-music-disc {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.4), transparent 40%),
+                repeating-radial-gradient(circle at center, #0a0a0a 0px, #0a0a0a 2px, #262626 2px, #262626 4px),
+                radial-gradient(circle at center, #ffd98a 0 15%, #050505 17% 100%);
+            border: 2px solid rgba(255, 255, 255, 0.55);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+            animation: spin 3.6s linear infinite;
+            animation-play-state: paused;
+            margin-top: 2px;
+        }
+
+        .reel-slide.is-active .reel-music-disc.is-playing {
+            animation-play-state: running;
+        }
+
+        .reel-info {
+            position: absolute;
+            left: 16px;
+            right: 84px;
+            bottom: 18px;
+            z-index: 25;
+            color: #ffffff;
+        }
+
+        .reel-name {
+            font-size: 1.32rem;
+            font-weight: 800;
+            margin-bottom: 7px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 4px 14px rgba(0, 0, 0, 0.45);
+            letter-spacing: -0.2px;
+        }
+
+        /* --- Panou de preț: Preț client (comandă simplă) vs. Preț partener
+           (după înregistrare gratuită ca și consultant) --- clar diferențiate,
+           fără să pară o reducere artificială/scam. */
+        .reel-price-panel {
+            display: flex;
+            gap: 7px;
+            margin-bottom: 11px;
+        }
+
+        .reel-price-cell {
+            flex: 1;
+            min-width: 0;
+            border-radius: 13px;
+            padding: 7px 11px 8px 11px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(10px) saturate(140%);
+            -webkit-backdrop-filter: blur(10px) saturate(140%);
+        }
+
+        .reel-price-cell.is-partner {
+            position: relative;
+            background: linear-gradient(135deg, rgba(255, 208, 122, 0.22), rgba(255, 255, 255, 0.06));
+            border: 1px solid rgba(255, 208, 122, 0.55);
+            box-shadow: 0 4px 16px rgba(255, 180, 90, 0.16);
+        }
+
+        .reel-price-tag {
+            position: absolute;
+            top: -8px;
+            right: 9px;
+            background: #ffd07a;
+            color: #4a2e00;
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .reel-price-label {
+            display: block;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: rgba(255, 255, 255, 0.72);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .reel-price-value {
+            display: block;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 1px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .reel-price-cell.is-client .reel-price-value {
+            font-weight: 700;
+            opacity: 0.85;
+        }
+
+        .reel-price-note {
+            display: block;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.65);
+            margin-top: 1px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+
+        .reel-detail-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+
+        .reel-detail-chip {
+            font-size: 0.66rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.92);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            padding: 3px 9px;
+            border-radius: 20px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+            white-space: nowrap;
+        }
+
+        .reel-desc-short {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.94);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .reel-desc-toggle {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.88);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            text-decoration-color: rgba(255, 255, 255, 0.4);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: opacity 0.15s ease;
+        }
+
+        .reel-desc-toggle:active {
+            opacity: 0.55;
+        }
+
+        /* --- Descriere extinsă inline (stil TikTok, monocrom alb, fără sheet separat) --- */
+        .reel-desc-body {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .reel-desc.expanded .reel-desc-body {
+            grid-template-rows: 1fr;
+        }
+
+        .reel-desc-body-inner {
+            overflow: hidden;
+        }
+
+        .reel-desc-full {
+            padding: 8px 0 10px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reel-note-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .reel-note-tag {
+            flex-shrink: 0;
+            width: 54px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: rgba(255, 255, 255, 0.62);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            padding-top: 2px;
+        }
+
+        .reel-note-text {
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .reel-desc-extra {
+            font-size: 0.82rem;
+            font-weight: 600;
+            line-height: 1.5;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.28);
+        }
+
+        .reel-toast {
+            position: absolute;
+            left: 50%;
+            bottom: 100px;
+            transform: translate(-50%, 10px);
+            background: rgba(255, 255, 255, 0.94);
+            color: #2d2638;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 9px 16px;
+            border-radius: 30px;
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            white-space: nowrap;
+        }
+
+        .reel-toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+</style>
+</head>
+
+<body class="loading">
+
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="heartGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#b07fff" />
+                <stop offset="100%" stop-color="#7326ff" />
+            </linearGradient>
+            <linearGradient id="videoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff5e62" />
+                <stop offset="100%" stop-color="#ff9966" />
+            </linearGradient>
+            <linearGradient id="guideGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8a4fff" />
+                <stop offset="100%" stop-color="#c6a3ff" />
+            </linearGradient>
+            <linearGradient id="catalogGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#11998e" />
+                <stop offset="100%" stop-color="#38ef7d" />
+            </linearGradient>
+            <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00c6ff" />
+                <stop offset="100%" stop-color="#0072ff" />
+            </linearGradient>
+            <linearGradient id="reelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff5e9c" />
+                <stop offset="100%" stop-color="#8a4fff" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="hero-section" id="hero">
+        <h1 class="welcome-title">
+            <span>Bine ai venit</span>
+            <svg class="heart-svg" viewBox="0 0 24 24">
+                <path
+                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+        </h1>
+
+        <div class="loader-container">
+            <div class="loader-bar-bg">
+                <div class="loader-bar-fill" id="progressBar"></div>
+            </div>
+            <div class="loader-text" id="progressText">Se încarcă 0%</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="profile-avatar-container">
+            <img src="https://lh3.googleusercontent.com/d/1V5JO_4TXOcDwwBl8jcRKyLqy8NApeYoc" alt="Consultant ESSENS"
+                class="profile-avatar">
+        </div>
+
+        <div class="intro-box">
+            <p>
+                Am adunat aici tot ce ține de compania în care activez și mă dezvolt, ca să fie simplu și ușor de
+                accesat pentru tine. Indiferent dacă îți dorești produse premium sau vrei să afli cum poți face parte
+                din echipă, ai toate resursele strânse într-un singur loc.
+            </p>
+        </div>
+
+        <div class="card" onclick="toggleCard(this)">
+            <div class="card-header">
+                <div class="card-title-block">
+                    <div class="card-icon-container">
+                        <svg class="emoji-style-svg" viewBox="0 0 24 24" fill="url(#videoGradient)">
+                            <path
+                                d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 4h3v3H7V4zm0 5h3v3H7V9zm0 5h3v3H7v-3zm10 6H7v-1h10v1zm0-3h3v3h-3v-3zm0-5h3v3h-3V9zm0-5h3v3h-3V4z" />
+                        </svg>
+                    </div>
+                    <h3>Prezentarea Oportunității</h3>
+                </div>
+                <div class="arrow-container">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-wrapper">
+                <div class="card-body" onclick="event.stopPropagation();">
+                    <div class="video-container">
+                        <iframe src="https://www.youtube.com/embed/jpSyeZOEm5U?si=c7gpF9M-BptJSRX_"
+                            allowfullscreen></iframe>
+                    </div>
+                    <p style="font-size: 0.82rem; color: #7a6e85; margin-bottom: 8px; text-align: center;">Urmărește
+                        acest scurt video explicativ.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="toggleCard(this)">
+            <div class="app-badge">Reduceri</div>
+
+            <div class="card-header">
+                <div class="card-title-block icon-align-top">
+                    <div class="card-icon-container">
+                        <svg class="emoji-style-svg" viewBox="0 0 24 24" fill="url(#guideGradient)">
+                            <path
+                                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                        </svg>
+                    </div>
+                    <div class="card-text-holder">
+                        <h3>Devino Partener ESSENS</h3>
+                        <p class="sub-label" style="color: #8a4fff; font-weight: 350;">Economisește inteligent și crește
+                            în ritmul tău</p>
+                    </div>
+                </div>
+                <div class="arrow-container align-top">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-wrapper">
+                <div class="card-body" onclick="event.stopPropagation();">
+
+                    <div class="info-callout-box">
+                        <svg class="info-callout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <div class="info-callout-text">
+                            Crearea unui cont este <span class="highlight-text">complet gratuită</span> și nu te obligă
+                            la nimic <i>(fără comenzi minime sau taxe)</i>. Îți oferă libertatea de a comanda produse
+                            direct la <span class="highlight-text">preț redus de fabrică</span> și acces la un venit
+                            suplimentar de acasă.
+                        </div>
+                    </div>
+
+                    <div class="tutorial-heading">Ghid rapid de configurare</div>
+
+                    <div class="step-block">
+                        <div class="step-header">
+                            <span class="step-number">1</span>
+                            <h4 class="step-title">Accesarea formularului securizat</h4>
+                        </div>
+                        <p class="step-desc">Apasă pe butonul de mai jos: <span class="highlight-text">„Activează Contul
+                                tău de Membru”</span>. Pagina oficială de înregistrare ESSENS se va deschide într-o filă
+                            nouă.</p>
+                    </div>
+
+                    <div class="step-block">
+                        <div class="step-header">
+                            <span class="step-number">2</span>
+                            <h4 class="step-title">Verificarea ID-ului de Sponsor</h4>
+                        </div>
+                        <p class="step-desc">Odată deschis link-ul, prima căsuță de sus numită <span
+                                class="highlight-text">„ID Sponsor”</span> va fi deja completată automat cu codul meu.
+                            <span class="highlight-text">Lasă-l exact așa cum este</span> pentru a fi repartizat în
+                            echipa mea și pentru a primi suport gratuit permanent.</p>
+                    </div>
+
+                    <div class="step-block">
+                        <div class="step-header">
+                            <span class="step-number">3</span>
+                            <h4 class="step-title">Metoda de înregistrare rapidă</h4>
+                        </div>
+                        <p class="step-desc">Poți opta pentru completarea manuală sau poți alege metoda mult mai rapidă
+                            și sigură din zona de sus: autentificarea instant prin rețelele tale folosind pictogramele
+                            <span class="highlight-text">Google, Apple ID</span> sau <span
+                                class="highlight-text">Facebook</span>.</p>
+                    </div>
+
+                    <div class="step-block">
+                        <div class="step-header">
+                            <span class="step-number">4</span>
+                            <h4 class="step-title">Datele tale personale și Parola</h4>
+                        </div>
+                        <p class="step-desc">Completează restul casetelor rămase goale (Nume, Prenume, Telefon, Email).
+                            La finalul formularului, creează o parolă puternică de cel puțin 8 caractere.</p>
+                    </div>
+
+                    <div class="step-block">
+                        <div class="step-header">
+                            <span class="step-number">5</span>
+                            <h4 class="step-title">Validarea finală și Confirmarea</h4>
+                        </div>
+                        <p class="step-desc">Bifează <span class="highlight-text">primele 3 căsuțe obligatorii</span> de
+                            la baza paginii pentru acceptarea termenilor, iar apoi apasă butonul mare de finalizare.</p>
+                    </div>
+
+                    <a id="mainPartnerBtn" href="https://www.essens.md/r-830000081" target="_blank"
+                        class="sub-button primary-action">
+                        
+                        <div class="ribbon-corner-container">
+                            <div class="ribbon-flag-strip" id="btnRibbonFlag"></div>
+                        </div>
+
+                        <div class="btn-inner-content">
+                            <svg class="svg-icon" viewBox="0 0 24 24" style="stroke-width: 2.5; margin-right: 2px;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="8.5" cy="7" r="4"></circle>
+                                <line x1="20" y1="8" x2="20" y2="14"></line>
+                                <line x1="23" y1="11" x2="17" y2="11"></line>
+                            </svg>
+                            <span>Activează Contul tău de Membru</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" onclick="toggleCard(this)">
+            <div class="card-header">
+                <div class="card-title-block">
+                    <div class="card-icon-container">
+                        <svg class="emoji-style-svg" viewBox="0 0 24 24" fill="url(#catalogGradient)">
+                            <path
+                                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                        </svg>
+                    </div>
+                    <div class="card-text-holder">
+                        <h3>Catalog și Resurse Informative</h3>
+                    </div>
+                </div>
+                <div class="arrow-container">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-wrapper">
+                <div class="card-body" onclick="event.stopPropagation();">
+
+                    <a href="catalog_parfumuri.pdf" download="Catalog_Parfumuri_ESSENS.pdf" class="sub-button">
+                        <div class="btn-inner-content">
+                            <svg class="svg-icon" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <polyline points="9 15 12 18 15 15"></polyline>
+                            </svg>
+                            <span>Catalog Parfumuri (PDF)</span>
+                        </div>
+                    </a>
+
+                    <a href="catalog_produse.pdf" download="Catalog_Produse_ESSENS.pdf" class="sub-button">
+                        <div class="btn-inner-content">
+                            <svg class="svg-icon" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <polyline points="9 15 12 18 15 15"></polyline>
+                            </svg>
+                            <span>Catalog Alte Produse (PDF)</span>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="internationalCard" onclick="toggleCard(this)">
+            <div class="card-header">
+                <div class="card-title-block">
+                    <div class="card-icon-container">
+                        <svg class="emoji-style-svg" viewBox="0 0 24 24" fill="url(#globeGradient)">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                    </div>
+                    <div class="card-text-holder">
+                        <h3>Înregistrare Internațională</h3>
+                    </div>
+                </div>
+                <div class="arrow-container">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+            </div>
+            <div class="card-wrapper">
+                <div class="card-body" onclick="event.stopPropagation();">
+                    
+                    <div style="margin-bottom: 14px; position: relative;">
+                        <input type="text" id="countrySearch" placeholder="Caută după țară sau cod (ex: România, RO)..." 
+                               style="width: 100%; padding: 10px 14px 10px 36px; font-size: 0.85rem; border: 1px solid rgba(138, 79, 255, 0.1); border-radius: 10px; background-color: #fcfaff; color: #2d2638; outline: none; transition: all 0.2s;"
+                               onfocus="this.style.borderColor='rgba(138, 79, 255, 0.4)'; this.style.backgroundColor='#ffffff'; this.style.boxShadow='0 2px 8px rgba(138, 79, 255, 0.04)';"
+                               onblur="this.style.borderColor='rgba(138, 79, 255, 0.1)'; this.style.backgroundColor='#fcfaff'; this.style.boxShadow='none';"
+                               onkeyup="filterCountries()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#b2a4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" 
+                             style="width: 14px; height: 14px; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+
+                    <div class="international-grid" id="countriesGrid">
+                        <a href="https://www.essens.at/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/at.png" alt="AT" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Austria</span>
+                            </div>
+                            <span class="country-iso-code">at</span>
+                        </a>
+                        <a href="https://www.essensworld.be/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/be.png" alt="BE" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Belgia</span>
+                            </div>
+                            <span class="country-iso-code">be</span>
+                        </a>
+                        <a href="https://www.essens.ba/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/ba.png" alt="BA" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Bosnia Herț.</span>
+                            </div>
+                            <span class="country-iso-code">ba</span>
+                        </a>
+                        <a href="https://www.essenseurope.com/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/bg.png" alt="BG" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Bulgaria</span>
+                            </div>
+                            <span class="country-iso-code">bg</span>
+                        </a>
+                        <a href="https://www.essens.cz/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/cz.png" alt="CZ" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Cehia</span>
+                            </div>
+                            <span class="country-iso-code">cz</span>
+                        </a>
+                        <a href="https://www.essens.com.cy/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/cy.png" alt="CY" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Cipru</span>
+                            </div>
+                            <span class="country-iso-code">cy</span>
+                        </a>
+                        <a href="https://www.essenseurope.com/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/dk.png" alt="DK" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Danemarca</span>
+                            </div>
+                            <span class="country-iso-code">dk</span>
+                        </a>
+                        <a href="https://www.essenseurope.ee/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/ee.png" alt="EE" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Estonia</span>
+                            </div>
+                            <span class="country-iso-code">ee</span>
+                        </a>
+                        <a href="https://www.essensworld.fr/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/fr.png" alt="FR" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Franța</span>
+                            </div>
+                            <span class="country-iso-code">fr</span>
+                        </a>
+                        <a href="https://www.essenseurope.com/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/fi.png" alt="FI" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Finlanda</span>
+                            </div>
+                            <span class="country-iso-code">fi</span>
+                        </a>
+                        <a href="https://www.essensworld.de/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/de.png" alt="DE" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Germania</span>
+                            </div>
+                            <span class="country-iso-code">de</span>
+                        </a>
+                        <a href="https://www.essens.gr/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/gr.png" alt="GR" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Grecia</span>
+                            </div>
+                            <span class="country-iso-code">gr</span>
+                        </a>
+                        <a href="https://www.essens.it/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/it.png" alt="IT" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Italia</span>
+                            </div>
+                            <span class="country-iso-code">it</span>
+                        </a>
+                        <a href="https://www.essens.ie/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/ie.png" alt="IE" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Irlanda</span>
+                            </div>
+                            <span class="country-iso-code">ie</span>
+                        </a>
+                        <a href="https://www.essensworld.kz/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/kz.png" alt="KZ" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Kazahstan</span>
+                            </div>
+                            <span class="country-iso-code">kz</span>
+                        </a>
+                        <a href="https://www.essenseurope.lv/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/lv.png" alt="LV" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Letonia</span>
+                            </div>
+                            <span class="country-iso-code">lv</span>
+                        </a>
+                        <a href="https://www.essens.lt/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/lt.png" alt="LT" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Lituania</span>
+                            </div>
+                            <span class="country-iso-code">lt</span>
+                        </a>
+                        <a href="https://www.essenseurope.com/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/lu.png" alt="LU" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Luxemburg</span>
+                            </div>
+                            <span class="country-iso-code">lu</span>
+                        </a>
+                        <a href="https://www.essens.co.uk/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/gb.png" alt="GB" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Marea Britanie</span>
+                            </div>
+                            <span class="country-iso-code">gb</span>
+                        </a>
+                        <a href="https://www.essens.md/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/md.png" alt="MD" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Moldova</span>
+                            </div>
+                            <span class="country-iso-code">md</span>
+                        </a>
+                        <a href="https://www.essenseurope.com/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/nl.png" alt="NL" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Olanda</span>
+                            </div>
+                            <span class="country-iso-code">nl</span>
+                        </a>
+                        <a href="https://www.essensworld.pl/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/pl.png" alt="PL" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Polonia</span>
+                            </div>
+                            <span class="country-iso-code">pl</span>
+                        </a>
+                        <a href="https://www.essenseurope.com/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/ro.png" alt="RO" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">România</span>
+                            </div>
+                            <span class="country-iso-code">ro</span>
+                        </a>
+                        <a href="https://www.essensworld.ru/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/ru.png" alt="RU" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Rusia</span>
+                            </div>
+                            <span class="country-iso-code">ru</span>
+                        </a>
+                        <a href="https://www.essensworld.sn/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/sn.png" alt="SN" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Senegal</span>
+                            </div>
+                            <span class="country-iso-code">sn</span>
+                        </a>
+                        <a href="https://www.essens.rs/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/rs.png" alt="RS" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Serbia</span>
+                            </div>
+                            <span class="country-iso-code">rs</span>
+                        </a>
+                        <a href="https://www.essens.sk/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/sk.png" alt="SK" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Slovacia</span>
+                            </div>
+                            <span class="country-iso-code">sk</span>
+                        </a>
+                        <a href="https://www.essens.si/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/si.png" alt="SI" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Slovenia</span>
+                            </div>
+                            <span class="country-iso-code">si</span>
+                        </a>
+                        <a href="https://www.essensworld.es/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/es.png" alt="ES" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Spania</span>
+                            </div>
+                            <span class="country-iso-code">es</span>
+                        </a>
+                        <a href="https://www.essensworld.se/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/se.png" alt="SE" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Suedia</span>
+                            </div>
+                            <span class="country-iso-code">se</span>
+                        </a>
+                        <a href="https://www.essens.hu/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/hu.png" alt="HU" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Ungaria</span>
+                            </div>
+                            <span class="country-iso-code">hu</span>
+                        </a>
+                        <a href="https://www.essensworld.uz/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/uz.png" alt="UZ" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Uzbekistan</span>
+                            </div>
+                            <span class="country-iso-code">uz</span>
+                        </a>
+                        <a href="https://www.essens.ua/r-830000081" target="_blank" class="country-bubble">
+                            <div class="country-left-info">
+                                <div class="flag-holder"><img src="https://flagcdn.com/w40/ua.png" alt="UA" style="width:100%; height:100%; object-fit:cover;"></div>
+                                <span class="country-name">Ucraina</span>
+                            </div>
+                            <span class="country-iso-code">ua</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card discover-hero-card" style="grid-template-rows: auto;" onclick="openDiscover()" role="button" tabindex="0"
+            onkeydown="if(event.key==='Enter')openDiscover()">
+            <div class="discover-sheen-wrap"></div>
+            <div class="app-badge discover-badge-pop">Nou</div>
+            <div class="card-header">
+                <div class="card-title-block">
+                    <div class="card-icon-container">
+                        <svg class="emoji-style-svg" viewBox="0 0 24 24" fill="url(#reelGradient)">
+                            <path
+                                d="M4 5a2 2 0 0 1 2-2h9.17a2 2 0 0 1 1.42.59l3.83 3.83a2 2 0 0 1 .58 1.41V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5z" />
+                            <path d="M14.5 3v3.5a1 1 0 0 0 1 1H19" fill="#fcfaff" />
+                            <path d="M9.7 9.6v5.3l4.7-2.65z" fill="#ffffff" />
+                        </svg>
+                    </div>
+                    <div class="card-text-holder">
+                        <h3>Descoperă produse</h3>
+                    </div>
+                </div>
+                <div class="arrow-container">
+                    <svg class="svg-icon" viewBox="0 0 24 24">
+                        <polyline points="9 6 15 12 9 18"></polyline>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <a href="https://my.essens.com/830000081" target="_blank" style="text-decoration: none; display: block;">
+            <div class="card" style="grid-template-rows: auto; margin-top: 25px;">
+                <div class="app-badge alt">Preț Întreg</div>
+
+                <div class="card-header">
+                    <div class="card-title-block">
+                        <div class="card-icon-container">
+                            <svg class="emoji-style-svg" viewBox="0 0 24 24" fill="none" stroke="#b2a4bf"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="9" cy="21" r="1"></circle>
+                                <circle cx="20" cy="21" r="1"></circle>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                            </svg>
+                        </div>
+                        <div class="card-text-holder">
+                            <h3>Magazin Online Essens</h3>
+                            <p class="sub-label" style="color: #7a6e85; font-weight: 400;">Comandă rapid, direct la tine
+                                acasă</p>
+                        </div>
+                    </div>
+                    <div class="arrow-container" style="transform: rotate(-90deg); color: #b2a4bf;">
+                        <svg class="svg-icon" viewBox="0 0 24 24">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <div class="support-section">
+            <p>Ai întrebări? Scrie-mi direct:</p>
+
+            <div class="split-chat-button">
+                <a href="https://wa.me/37378020655?text=Bun%C4%83!%20Am%20nevoie%20de%20ajutor%20cu%20platforma%20ESSENS."
+                    target="_blank" class="chat-half chat-whatsapp">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="stroke: currentColor;">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                    <span>WhatsApp</span>
+                </a>
+
+                <div class="split-divider"></div>
+
+                <a href="https://m.me//Ludmila.Stepan.3" target="_blank" class="chat-half chat-messenger">
+                    <svg class="svg-icon" viewBox="0 0 24 24" style="stroke: currentColor;">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                    <span>Messenger</span>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="custom-footer">
+        <p class="footer-text">
+            © 2026 Toate drepturile rezervate.<br>
+            Creat și gestionat de <span class="footer-brand">Stepan Ludmila</span>.
+        </p>
+    </footer>
+
+    <!-- DESCOPERĂ PRODUSE — OVERLAY FULLSCREEN -->
+    <div class="discover-overlay" id="discoverOverlay" aria-hidden="true">
+        <div class="discover-frame">
+            <div class="discover-topbar">
+                <button class="discover-back-btn" onclick="closeDiscover()" aria-label="Înapoi">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <div class="discover-topbar-title">For You</div>
+                <div class="discover-topbar-spacer" aria-hidden="true"></div>
+            </div>
+            <div class="discover-feed" id="discoverFeed"></div>
+
+            <div class="sound-prompt" id="soundPrompt" onclick="unmuteSound(event)">
+                <div class="sound-prompt-icon" id="soundPromptIcon"></div>
+                <span>Atinge pentru sunet</span>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Obiect de mapare cod țară -> link înregistrare oficial
+        const countryLinks = {
+            'AT': 'https://www.essens.at/r-830000081',
+            'BE': 'https://www.essensworld.be/r-830000081',
+            'BA': 'https://www.essens.ba/r-830000081',
+            'BG': 'https://www.essenseurope.com/r-830000081',
+            'CZ': 'https://www.essens.cz/r-830000081',
+            'CY': 'https://www.essens.com.cy/r-830000081',
+            'DK': 'https://www.essenseurope.com/r-830000081',
+            'EE': 'https://www.essenseurope.ee/r-830000081',
+            'FR': 'https://www.essensworld.fr/r-830000081',
+            'FI': 'https://www.essenseurope.com/r-830000081',
+            'DE': 'https://www.essensworld.de/r-830000081',
+            'GR': 'https://www.essens.gr/r-830000081',
+            'IT': 'https://www.essens.it/r-830000081',
+            'IE': 'https://www.essens.ie/r-830000081',
+            'KZ': 'https://www.essensworld.kz/r-830000081',
+            'LV': 'https://www.essenseurope.lv/r-830000081',
+            'LT': 'https://www.essens.lt/r-830000081',
+            'LU': 'https://www.essenseurope.com/r-830000081',
+            'GB': 'https://www.essens.co.uk/r-830000081',
+            'MD': 'https://www.essens.md/r-830000081',
+            'NL': 'https://www.essenseurope.com/r-830000081',
+            'PL': 'https://www.essensworld.pl/r-830000081',
+            'RO': 'https://www.essenseurope.com/r-830000081',
+            'RU': 'https://www.essensworld.ru/r-830000081',
+            'SN': 'https://www.essensworld.sn/r-830000081',
+            'RS': 'https://www.essens.rs/r-830000081',
+            'SK': 'https://www.essens.sk/r-830000081',
+            'SI': 'https://www.essens.si/r-830000081',
+            'ES': 'https://www.essensworld.es/r-830000081',
+            'SE': 'https://www.essensworld.se/r-830000081',
+            'HU': 'https://www.essens.hu/r-830000081',
+            'UZ': 'https://www.essensworld.uz/r-830000081',
+            'UA': 'https://www.essens.ua/r-830000081'
+        };
+
+        // Funcția de detecție IP/Țară asincronă cu injectare imagine în Ribbon
+        async function detectCountryAndSetLink() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const countryCode = data.country_code; // Întoarce ex: 'RO', 'IT', 'MD'
+                
+                if (countryCode && countryLinks[countryCode]) {
+                    const targetLink = countryLinks[countryCode];
+                    const partnerBtn = document.getElementById('mainPartnerBtn');
+                    
+                    if (partnerBtn) {
+                        // Actualizăm link-ul de redirecționare globală
+                        partnerBtn.setAttribute('href', targetLink);
+                        
+                        // Înlocuim dinamic imaginea de fundal a panglicii cu steagul oficial HD vectorizat
+                        const ribbonFlag = document.getElementById('btnRibbonFlag');
+                        if (ribbonFlag) {
+                            const flagUrl = `https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`;
+                            ribbonFlag.style.backgroundImage = `url('${flagUrl}')`;
+                        }
+                        
+                        console.log(`[GeoIP] Locație stabilită: ${countryCode}. Ribbon reactualizat.`);
+                    }
+
+                    // Actualizăm și butoanele de preț-partener din feedul „Descoperă Produse”
+                    document.querySelectorAll('.js-partner-link').forEach(el => {
+                        el.setAttribute('href', targetLink);
+                    });
+                }
+            } catch (error) {
+                console.warn('[GeoIP] Eroare detecție. Rămâne configurarea de bază (MD).', error);
+            }
+        }
+
+        // Discul de lângă butoanele de acțiune se rotește doar cât timp
+        // videoclipul chiar rulează, și se oprește exact când e pe pauză.
+        // 'play'/'pause' nu fac bubble, așa că le prindem în faza de capture.
+        document.addEventListener('play', (e) => {
+            if (!e.target.classList || !e.target.classList.contains('reel-video')) return;
+            const slide = e.target.closest('.reel-slide');
+            const disc = slide && slide.querySelector('.reel-music-disc');
+            if (disc) disc.classList.add('is-playing');
+        }, true);
+
+        document.addEventListener('pause', (e) => {
+            if (!e.target.classList || !e.target.classList.contains('reel-video')) return;
+            const slide = e.target.closest('.reel-slide');
+            const disc = slide && slide.querySelector('.reel-music-disc');
+            if (disc) disc.classList.remove('is-playing');
+        }, true);
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Rulăm algoritmul asincron GeoIP
+            detectCountryAndSetLink();
+
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            let percentage = 0;
+            const totalTime = 2500;
+            const intervalTime = 25;
+            const increment = 100 / (totalTime / intervalTime);
+
+            const timer = setInterval(() => {
+                percentage += increment;
+                if (percentage >= 100) {
+                    percentage = 100;
+                    clearInterval(timer);
+
+                    setTimeout(() => {
+                        document.body.classList.remove('loading');
+                        document.body.classList.add('scrolled');
+                    }, 200);
+                }
+
+                progressBar.style.width = `${Math.floor(percentage)}%`;
+                progressText.innerText = `Se încarcă ${Math.floor(percentage)}%`;
+            }, intervalTime);
+        });
+        
+        // Căutare inteligentă extinsă: Caută după Nume sau după Codul ISO (ex: "ro")
+        function filterCountries() {
+            const input = document.getElementById('countrySearch');
+            const filter = input.value.toLowerCase().trim();
+            const grid = document.getElementById('countriesGrid');
+            const bubbles = grid.getElementsByClassName('country-bubble');
+
+            for (let i = 0; i < bubbles.length; i++) {
+                const countryNameEl = bubbles[i].getElementsByClassName('country-name')[0];
+                const countryIsoEl = bubbles[i].getElementsByClassName('country-iso-code')[0];
+                
+                if (countryNameEl && countryIsoEl) {
+                    const nameText = countryNameEl.textContent.toLowerCase();
+                    const isoText = countryIsoEl.textContent.toLowerCase();
+                    
+                    // Condiție: dacă textul căutat se află fie în nume, fie în codul ISO
+                    if (nameText.indexOf(filter) > -1 || isoText.indexOf(filter) > -1) {
+                        bubbles[i].style.display = "";
+                    } else {
+                        bubbles[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function toggleCard(cardElement) {
+            if (cardElement.parentElement.tagName === 'A') return;
+
+            document.querySelectorAll('.card').forEach(c => {
+                if (c !== cardElement) c.classList.remove('active');
+            });
+            cardElement.classList.toggle('active');
+        }
+            /* ============================================================
+           DESCOPERĂ PRODUSE — date + logică feed tip reels
+        ============================================================ */
+        // Fiecare element din "images" poate fi:
+        //   - un link normal către o poză:  'https://.../poza.jpg'
+        //   - un videoclip curat (fără watermark/logo/butoane), ca obiect:
+        //       { video: 'https://.../clip.mp4' }
+        //     Linkul trebuie să fie către FIȘIERUL video propriu-zis (mp4), găzduit de tine
+        //     (ex: pus lângă poze, în același loc unde ții imaginile), nu un link tiktok.com.
+        //     Vezi explicația de mai jos despre cum obții acel fișier din TikTok.
+        const PRODUCTS = [
+            {
+                id: 'p1',
+                name: 'Elyxir Nocturne',
+                images: [
+                    'https://picsum.photos/seed/essens-p1a/700/1240',
+                    'https://picsum.photos/seed/essens-p1b/700/1240',
+                    'https://picsum.photos/seed/essens-p1c/700/1240'
+                ],
+                track: 'Piesă ambientală · Elyxir Nocturne',
+                priceOld: '389 MDL',
+                priceNew: '329 MDL',
+                badge: 'Recomandat',
+                short: 'Lemn de santal, vanilie Bourbon și mosc alb — pentru seri memorabile.',
+                type: 'Apă de parfum',
+                occasion: 'Recomandat seara',
+                notes: {
+                    top: 'Bergamotă, piper roz',
+                    heart: 'Iris, lemn de santal',
+                    base: 'Vanilie Bourbon, mosc alb, fabă tonka',
+                    extra: 'Longevitate ridicată · recomandat pentru sezonul rece'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p2',
+                name: 'Bloom Atelier',
+                images: [
+                    'https://picsum.photos/seed/essens-p2a/700/1240',
+                    'https://picsum.photos/seed/essens-p2b/700/1240'
+                ],
+                track: 'Piesă ambientală · Bloom Atelier',
+                priceOld: '349 MDL',
+                priceNew: '299 MDL',
+                badge: 'Recomandat',
+                short: 'Buchet floral de pion și iasomie, cu un fond discret de mosc.',
+                type: 'Apă de parfum',
+                occasion: 'Purtare zilnică',
+                notes: {
+                    top: 'Mandarină, frunze verzi',
+                    heart: 'Pion, iasomie, trandafir',
+                    base: 'Mosc, lemn alb',
+                    extra: 'Parfum feminin și luminos · ideal pentru purtare zilnică'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p3',
+                name: 'Aqua Marin',
+                images: [
+                    'https://picsum.photos/seed/essens-p3a/700/1240',
+                    'https://picsum.photos/seed/essens-p3b/700/1240',
+                    'https://picsum.photos/seed/essens-p3c/700/1240'
+                ],
+                track: 'Piesă ambientală · Aqua Marin',
+                priceOld: '329 MDL',
+                priceNew: '279 MDL',
+                badge: 'Recomandat',
+                short: 'Prospețime citrică și note marine, ideal pentru zile călduroase.',
+                type: 'Apă de toaletă',
+                occasion: 'Recomandat ziua',
+                notes: {
+                    top: 'Bergamotă, grapefruit',
+                    heart: 'Accente acvatice, mentă',
+                    base: 'Lemn de cedru, ambră marină',
+                    extra: 'Concentrație moderată · versatil, potrivit pentru zi'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p4',
+                name: 'Ambre Doré',
+                images: [
+                    'https://picsum.photos/seed/essens-p4a/700/1240',
+                    'https://picsum.photos/seed/essens-p4b/700/1240'
+                ],
+                track: 'Piesă ambientală · Ambre Doré',
+                priceOld: '419 MDL',
+                priceNew: '349 MDL',
+                badge: 'Recomandat',
+                short: 'Compoziție orientală, caldă, cu chihlimbar și note gourmand.',
+                type: 'Extrait de parfum',
+                occasion: 'Ocazii speciale',
+                notes: {
+                    top: 'Scorțișoară, portocală dulce',
+                    heart: 'Chihlimbar, tămâie',
+                    base: 'Vanilie, patchouli, zahăr ars',
+                    extra: 'Compoziție intensă · ideală pentru seară și ocazii speciale'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p5',
+                name: 'Velvet Iris',
+                images: [
+                    'https://picsum.photos/seed/essens-p5a/700/1240',
+                    'https://picsum.photos/seed/essens-p5b/700/1240',
+                    'https://picsum.photos/seed/essens-p5c/700/1240'
+                ],
+                track: 'Piesă ambientală · Velvet Iris',
+                priceOld: '399 MDL',
+                priceNew: '339 MDL',
+                badge: 'Recomandat',
+                short: 'Floral pudrat, cu iris și mosc catifelat, elegant și discret.',
+                type: 'Apă de parfum',
+                occasion: 'Birou și evenimente',
+                notes: {
+                    top: 'Violetă, piper alb',
+                    heart: 'Iris florentin',
+                    base: 'Mosc, lemn de santal, fabă tonka',
+                    extra: 'Sillage moderat · elegant, potrivit pentru birou și evenimente'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p6',
+                name: 'Citrus Nomad',
+                images: [
+                    'https://picsum.photos/seed/essens-p6a/700/1240',
+                    'https://picsum.photos/seed/essens-p6b/700/1240'
+                ],
+                track: 'Piesă ambientală · Citrus Nomad',
+                priceOld: '289 MDL',
+                priceNew: '249 MDL',
+                badge: 'Recomandat',
+                short: 'Colonie energizantă de citrice, pentru dimineți active.',
+                type: 'Colonie',
+                occasion: 'Rutina de dimineață',
+                notes: {
+                    top: 'Bergamotă, lămâie, mandarină',
+                    heart: 'Ghimbir, frunze de ceai verde',
+                    base: 'Lemn de vetiver',
+                    extra: 'Prospețime ridicată · ideal pentru rutina de dimineață'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p7',
+                name: '[TEST] Produs video',
+                images: [
+                    { video: 'https://res.cloudinary.com/wmiqytyf/video/upload/TikDownloader.io_7611801549982977310_hd_eaz1nd.mp4' }
+                ],
+                track: 'Piesă ambientală · Test video',
+                priceOld: '000 MDL',
+                priceNew: '000 MDL',
+                badge: 'Test',
+                short: 'Card de test pentru afișarea unui videoclip în feed.',
+                notes: {
+                    top: '—',
+                    heart: '—',
+                    base: '—',
+                    extra: 'Acesta este un produs de test, nu e afișat public.'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            },
+            {
+                id: 'p8',
+                name: '[TEST] Produs video',
+                images: [
+                    { video: 'https://res.cloudinary.com/wmiqytyf/video/upload/v1786211169/Tikdownloader.Io_7668050624113544449_Hd_z2gdtm.mp4' }
+                ],
+                track: 'Piesă ambientală · Test video',
+                priceOld: '000 MDL',
+                priceNew: '000 MDL',
+                badge: 'Test',
+                short: 'Card de test pentru afișarea unui videoclip în feed.',
+                notes: {
+                    top: '—',
+                    heart: '—',
+                    base: '—',
+                    extra: 'Acesta este un produs de test, nu e afișat public.'
+                },
+                buyLink: 'https://my.essens.com/830000081'
+            }
+        ];
+
+        const savedProducts = new Set();
+        let isMuted = true;
+        let discoverObserver = null;
+        const CAROUSEL_DURATION = 4200; // ms per imagine
+        const slideTimers = {};
+        const slideState = {};
+
+        function svgBag() {
+            return '<svg viewBox="0 0 24 24"><path d="M6 2l1.5 4h9L18 2"></path><path d="M3.5 8h17l-1.6 11.2a2 2 0 0 1-2 1.8H7.1a2 2 0 0 1-2-1.8L3.5 8z"></path></svg>';
+        }
+        function svgGift() {
+            return '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="13" rx="1"></rect><line x1="12" y1="8" x2="12" y2="21"></line><path d="M3 8h18v4H3z"></path><path d="M12 8c-2-3-6-3-6 0s4 0 6 0z"></path><path d="M12 8c2-3 6-3 6 0s-4 0-6 0z"></path></svg>';
+        }
+        function svgShare() {
+            return '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"></circle><circle cx="6" cy="12" r="2.6"></circle><circle cx="18" cy="19" r="2.6"></circle><line x1="8.3" y1="10.7" x2="15.7" y2="6.3"></line><line x1="8.3" y1="13.3" x2="15.7" y2="17.7"></line></svg>';
+        }
+        function svgBookmark() {
+            return '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21V3z"></path></svg>';
+        }
+        function svgMuted() {
+            return '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4z"></path><line x1="16" y1="9" x2="22" y2="15"></line><line x1="22" y1="9" x2="16" y2="15"></line></svg>';
+        }
+        function svgUnmuted() {
+            return '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4z"></path><path d="M16 8a5 5 0 0 1 0 8"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>';
+        }
+        function svgPlayGlyph() {
+            return '<svg viewBox="0 0 24 24"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>';
+        }
+        function svgPauseGlyph() {
+            return '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
+        }
+
+        function shuffleArray(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function renderDiscoverFeed(list) {
+            const items = list || PRODUCTS;
+            const feed = document.getElementById('discoverFeed');
+            feed.innerHTML = items.map((p, idx) => {
+                const mediaHtml = p.images.map((item, i) => {
+                    const isVideo = item && typeof item === 'object' && item.video;
+                    const inner = isVideo
+                        ? `<video src="${item.video}" class="reel-video" muted loop playsinline preload="${i === 0 ? 'auto' : 'metadata'}"></video>`
+                        : `<img src="${item}" alt="${p.name}" loading="${idx === 0 ? 'eager' : 'lazy'}" onerror="this.classList.add('img-broken')">`;
+                    return `<div class="reel-media${i === 0 ? ' is-current' : ''}" data-i="${i}">${inner}</div>`;
+                }).join('');
+                const dotsHtml = p.images.length > 1
+                    ? p.images.map(() => '<div class="reel-progress-dot"><div class="reel-progress-fill"></div></div>').join('')
+                    : '';
+                const progressHtml = dotsHtml ? `<div class="reel-progress">${dotsHtml}</div>` : '';
+                const hasVideo = p.images.some(item => item && typeof item === 'object' && item.video);
+                const muteBtnHtml = hasVideo
+                    ? `<button class="reel-mute-btn" onclick="toggleMute(event)" aria-label="Sunet on/off">${svgMuted()}</button>`
+                    : '';
+                const pauseIconHtml = hasVideo
+                    ? `<div class="reel-pause-icon" id="pauseicon-${p.id}"></div>`
+                    : '';
+                const notes = p.notes || {};
+                const chipsHtml = [p.type, p.occasion].filter(Boolean)
+                    .map(text => `<span class="reel-detail-chip">${text}</span>`)
+                    .join('');
+                const chipsBlockHtml = chipsHtml ? `<div class="reel-detail-chips">${chipsHtml}</div>` : '';
+                const noteRowsHtml = [['Vârf', notes.top], ['Inimă', notes.heart], ['Bază', notes.base]]
+                    .filter(([, text]) => !!text)
+                    .map(([label, text]) => `<div class="reel-note-row"><span class="reel-note-tag">${label}</span><span class="reel-note-text">${text}</span></div>`)
+                    .join('');
+                const extraHtml = notes.extra ? `<div class="reel-desc-extra">${notes.extra}</div>` : '';
+
+                return `
+                <div class="reel-slide" data-id="${p.id}" data-index="${idx}" data-img-count="${p.images.length}">
+                    <div class="reel-media-wrap">${mediaHtml}</div>
+                    <div class="reel-scrim-top"></div>
+                    <div class="reel-scrim-base"></div>
+                    <div class="reel-scrim-expand"></div>
+                    ${muteBtnHtml}
+                    ${pauseIconHtml}
+                    <div class="reel-tap-zones">
+                        <div onclick="reelTap('${p.id}','prev')"></div>
+                        <div onclick="reelTap('${p.id}','next')"></div>
+                    </div>
+                    ${progressHtml}
+
+                    <div class="reel-actions">
+                        <div class="reel-action is-buy">
+                            <a class="reel-action-btn" href="${p.buyLink}" target="_blank" aria-label="Cumpără produsul">${svgBag()}</a>
+                            <span>Cumpără<br>${p.priceOld}</span>
+                        </div>
+                        <div class="reel-action is-partner">
+                            <a class="reel-action-btn js-partner-link" href="https://www.essens.md/r-830000081" target="_blank" aria-label="Cumpără cu reducere de partener">${svgGift()}</a>
+                            <span>Preț partener<br>${p.priceNew}</span>
+                        </div>
+                        <div class="reel-action is-share">
+                            <button class="reel-action-btn" onclick="shareProduct('${p.id}')" aria-label="Distribuie">${svgShare()}</button>
+                            <span>Distribuie</span>
+                        </div>
+                        <div class="reel-action is-save${savedProducts.has(p.id) ? ' is-saved' : ''}" id="save-${p.id}">
+                            <button class="reel-action-btn" onclick="toggleSave('${p.id}')" aria-label="Salvează">${svgBookmark()}</button>
+                            <span>Salvează</span>
+                        </div>
+                        <div class="reel-music-disc"></div>
+                    </div>
+
+                    <div class="reel-info">
+                        <div class="reel-name">${p.name}</div>
+                        <div class="reel-price-panel">
+                            <div class="reel-price-cell is-client">
+                                <span class="reel-price-label">Preț client</span>
+                                <span class="reel-price-value">${p.priceOld}</span>
+                                <span class="reel-price-note">Comandă directă</span>
+                            </div>
+                            <div class="reel-price-cell is-partner">
+                                <span class="reel-price-tag">${p.badge}</span>
+                                <span class="reel-price-label">Preț partener</span>
+                                <span class="reel-price-value">${p.priceNew}</span>
+                                <span class="reel-price-note">Cu cont gratuit</span>
+                            </div>
+                        </div>
+                        <div class="reel-desc" id="desc-${p.id}">
+                            <div class="reel-desc-body">
+                                <div class="reel-desc-body-inner">
+                                    <div class="reel-desc-full">${chipsBlockHtml}${noteRowsHtml}${extraHtml}</div>
+                                </div>
+                            </div>
+                            <div class="reel-desc-short">
+                                <span>${p.short}</span>
+                                <button class="reel-desc-toggle" onclick="toggleDescription('${p.id}')">Citește mai mult</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="reel-toast" id="toast-${p.id}"></div>
+                </div>`;
+            }).join('');
+        }
+
+        function initDiscoverObserver() {
+            const feed = document.getElementById('discoverFeed');
+            const slides = feed.querySelectorAll('.reel-slide');
+
+            discoverObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+                        activateSlide(entry.target);
+                    } else {
+                        deactivateSlide(entry.target);
+                    }
+                });
+            }, { root: feed, threshold: [0, 0.6, 1] });
+
+            slides.forEach(s => discoverObserver.observe(s));
+        }
+
+        function activateSlide(slideEl) {
+            slideEl.classList.add('is-active');
+            const disc = slideEl.querySelector('.reel-music-disc');
+            if (disc) disc.classList.add('is-playing');
+            startCarousel(slideEl);
+            scheduleVideoPlay(slideEl);
+
+            const hasVideo = !!slideEl.querySelector('.reel-video');
+            if (hasVideo && isMuted) {
+                showSoundPrompt();
+            } else {
+                hideSoundPrompt();
+            }
+        }
+
+        function deactivateSlide(slideEl) {
+            slideEl.classList.remove('is-active');
+            const disc = slideEl.querySelector('.reel-music-disc');
+            if (disc) disc.classList.remove('is-playing');
+            stopCarousel(slideEl);
+            cancelVideoPlay(slideEl);
+            pauseAllVideos(slideEl);
+        }
+
+        const pendingVideoPlay = {};
+
+        function scheduleVideoPlay(slideEl, resetTime) {
+            cancelVideoPlay(slideEl);
+            const id = slideEl.getAttribute('data-id');
+            const mediaEl = slideEl.querySelector('.reel-media.is-current');
+            const video = mediaEl ? mediaEl.querySelector('video') : null;
+            if (!mediaEl || !video) return;
+
+            const run = () => {
+                mediaEl.removeEventListener('transitionend', onTransitionEnd);
+                clearTimeout(pendingVideoPlay[id].timeoutId);
+                delete pendingVideoPlay[id];
+                if (slideEl.classList.contains('is-active')) {
+                    playCurrentVideo(slideEl, resetTime);
+                }
+            };
+            const onTransitionEnd = (e) => {
+                if (e.propertyName === 'opacity') run();
+            };
+            mediaEl.addEventListener('transitionend', onTransitionEnd);
+            // fallback în caz că evenimentul nu se declanșează (ex. mișcare redusă activată)
+            const timeoutId = setTimeout(run, 500);
+            pendingVideoPlay[id] = { timeoutId, mediaEl, onTransitionEnd };
+        }
+
+        function cancelVideoPlay(slideEl) {
+            const id = slideEl.getAttribute('data-id');
+            const pending = pendingVideoPlay[id];
+            if (pending) {
+                clearTimeout(pending.timeoutId);
+                pending.mediaEl.removeEventListener('transitionend', pending.onTransitionEnd);
+                delete pendingVideoPlay[id];
+            }
+        }
+
+        function playCurrentVideo(slideEl, resetTime) {
+            const current = slideEl.querySelector('.reel-media.is-current video');
+            if (current) {
+                current.muted = isMuted;
+                if (resetTime) current.currentTime = 0;
+                current.play().catch(() => {});
+            }
+        }
+
+        function pauseAllVideos(slideEl) {
+            slideEl.querySelectorAll('.reel-media video').forEach(v => v.pause());
+        }
+
+        function toggleMute(event) {
+            if (event) event.stopPropagation();
+            isMuted = !isMuted;
+            document.querySelectorAll('.reel-video').forEach(v => { v.muted = isMuted; });
+            document.querySelectorAll('.reel-mute-btn').forEach(btn => {
+                btn.innerHTML = isMuted ? svgMuted() : svgUnmuted();
+            });
+            hideSoundPrompt();
+            if (!isMuted) disarmScrollUnmute();
+        }
+
+        // --- Activare sunet: prompt central (stil TikTok) + activare automată la scroll ---
+        function showSoundPrompt() {
+            const prompt = document.getElementById('soundPrompt');
+            const icon = document.getElementById('soundPromptIcon');
+            if (!prompt || !icon) return;
+            icon.innerHTML = svgMuted();
+            prompt.classList.add('show');
+        }
+
+        function hideSoundPrompt() {
+            const prompt = document.getElementById('soundPrompt');
+            if (prompt) prompt.classList.remove('show');
+        }
+
+        function unmuteSound(event) {
+            if (event) event.stopPropagation();
+            if (!isMuted) { hideSoundPrompt(); return; }
+            isMuted = false;
+            document.querySelectorAll('.reel-video').forEach(v => { v.muted = false; });
+            document.querySelectorAll('.reel-mute-btn').forEach(btn => {
+                btn.innerHTML = svgUnmuted();
+            });
+            hideSoundPrompt();
+            disarmScrollUnmute();
+        }
+
+        let scrollUnmuteHandler = null;
+
+        function armScrollUnmute() {
+            const feed = document.getElementById('discoverFeed');
+            if (!feed || !isMuted) return;
+            disarmScrollUnmute();
+            scrollUnmuteHandler = () => unmuteSound();
+            feed.addEventListener('touchmove', scrollUnmuteHandler, { passive: true, once: true });
+            feed.addEventListener('wheel', scrollUnmuteHandler, { passive: true, once: true });
+            feed.addEventListener('scroll', scrollUnmuteHandler, { passive: true, once: true });
+        }
+
+        function disarmScrollUnmute() {
+            const feed = document.getElementById('discoverFeed');
+            if (feed && scrollUnmuteHandler) {
+                feed.removeEventListener('touchmove', scrollUnmuteHandler);
+                feed.removeEventListener('wheel', scrollUnmuteHandler);
+                feed.removeEventListener('scroll', scrollUnmuteHandler);
+            }
+            scrollUnmuteHandler = null;
+        }
+
+        function startCarousel(slideEl) {
+            const id = slideEl.getAttribute('data-id');
+            stopCarousel(slideEl);
+            slideState[id] = slideState[id] || { index: 0 };
+            const count = parseInt(slideEl.getAttribute('data-img-count'), 10);
+            if (count <= 1) {
+                const bar = slideEl.querySelectorAll('.reel-progress-fill')[0];
+                if (bar) bar.style.width = '100%';
+                return;
+            }
+            runCarouselStep(slideEl, id);
+        }
+
+        function runCarouselStep(slideEl, id) {
+            const state = slideState[id];
+            const bars = slideEl.querySelectorAll('.reel-progress-fill');
+            bars.forEach((bar, i) => {
+                if (i < state.index) bar.style.width = '100%';
+                else if (i > state.index) bar.style.width = '0%';
+            });
+
+            const activeBar = bars[state.index];
+            let progress = 0;
+            const stepMs = 60;
+            if (activeBar) {
+                activeBar.style.transition = 'none';
+                activeBar.style.width = '0%';
+            }
+
+            slideTimers[id] = setInterval(() => {
+                progress += (stepMs / CAROUSEL_DURATION) * 100;
+                if (activeBar) {
+                    activeBar.style.transition = 'width .08s linear';
+                    activeBar.style.width = Math.min(progress, 100) + '%';
+                }
+                if (progress >= 100) {
+                    clearInterval(slideTimers[id]);
+                    goToImage(slideEl, id, state.index + 1);
+                }
+            }, stepMs);
+        }
+
+        function stopCarousel(slideEl) {
+            const id = slideEl.getAttribute('data-id');
+            if (slideTimers[id]) {
+                clearInterval(slideTimers[id]);
+                delete slideTimers[id];
+            }
+        }
+
+        function goToImage(slideEl, id, newIndex) {
+            const count = parseInt(slideEl.getAttribute('data-img-count'), 10);
+            if (count <= 1) return;
+            const wrapped = ((newIndex % count) + count) % count;
+            const state = slideState[id] || { index: 0 };
+            state.index = wrapped;
+            slideState[id] = state;
+
+            slideEl.querySelectorAll('.reel-media').forEach(m => {
+                m.classList.toggle('is-current', parseInt(m.getAttribute('data-i'), 10) === wrapped);
+            });
+            pauseAllVideos(slideEl);
+            cancelVideoPlay(slideEl);
+
+            if (slideEl.classList.contains('is-active')) {
+                startCarousel(slideEl);
+                scheduleVideoPlay(slideEl, true);
+            }
+        }
+
+        function reelTap(id, dir) {
+            const slideEl = document.querySelector(`.reel-slide[data-id="${id}"]`);
+            if (!slideEl) return;
+            const count = parseInt(slideEl.getAttribute('data-img-count'), 10);
+            if (count <= 1) {
+                togglePlayPause(id);
+                return;
+            }
+            const state = slideState[id] || { index: 0 };
+            const delta = dir === 'next' ? 1 : -1;
+            goToImage(slideEl, id, state.index + delta);
+        }
+
+        function togglePlayPause(id) {
+            const slideEl = document.querySelector(`.reel-slide[data-id="${id}"]`);
+            if (!slideEl) return;
+            const video = slideEl.querySelector('.reel-media.is-current video');
+            if (!video) return;
+            const icon = document.getElementById(`pauseicon-${id}`);
+            if (video.paused) {
+                video.play().catch(() => {});
+                flashPlayIcon(icon, svgPlayGlyph());
+            } else {
+                video.pause();
+                flashPlayIcon(icon, svgPauseGlyph());
+            }
+        }
+
+        function flashPlayIcon(icon, svg) {
+            if (!icon) return;
+            icon.innerHTML = svg;
+            icon.classList.add('show');
+            clearTimeout(icon._t);
+            icon._t = setTimeout(() => icon.classList.remove('show'), 550);
+        }
+
+        function toggleDescription(id) {
+            const desc = document.getElementById(`desc-${id}`);
+            if (!desc) return;
+            desc.classList.toggle('expanded');
+            const isExpanded = desc.classList.contains('expanded');
+            const slide = desc.closest('.reel-slide');
+            if (slide) slide.classList.toggle('desc-open', isExpanded);
+            const btn = desc.querySelector('.reel-desc-toggle');
+            if (btn) btn.textContent = isExpanded ? 'Arată mai puțin' : 'Citește mai mult';
+        }
+
+        function toggleSave(id) {
+            const wrap = document.getElementById(`save-${id}`);
+            if (savedProducts.has(id)) {
+                savedProducts.delete(id);
+                wrap.classList.remove('is-saved');
+                showToast(id, 'Eliminat din salvate');
+            } else {
+                savedProducts.add(id);
+                wrap.classList.add('is-saved');
+                showToast(id, 'Salvat ♥');
+            }
+        }
+
+        function shareProduct(id) {
+            const product = PRODUCTS.find(p => p.id === id);
+            const shareData = {
+                title: `${product.name} · ESSENS`,
+                text: product.short,
+                url: window.location.href
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareData.url).then(() => {
+                    showToast(id, 'Link copiat!');
+                }).catch(() => {
+                    showToast(id, 'Nu s-a putut copia linkul');
+                });
+            }
+        }
+
+        function showToast(id, message) {
+            const toast = document.getElementById(`toast-${id}`);
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => toast.classList.remove('show'), 1600);
+        }
+
+        function openDiscover() {
+            const overlay = document.getElementById('discoverOverlay');
+            overlay.classList.add('open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('discover-open');
+
+            if (discoverObserver) discoverObserver.disconnect();
+            document.querySelectorAll('.reel-slide').forEach(s => stopCarousel(s));
+
+            renderDiscoverFeed(shuffleArray(PRODUCTS));
+            document.getElementById('discoverFeed').scrollTop = 0;
+            initDiscoverObserver();
+            armScrollUnmute();
+        }
+
+        function closeDiscover() {
+            const overlay = document.getElementById('discoverOverlay');
+            overlay.classList.remove('open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('discover-open');
+            document.querySelectorAll('.reel-slide').forEach(s => {
+                stopCarousel(s);
+                cancelVideoPlay(s);
+                pauseAllVideos(s);
+            });
+            if (discoverObserver) discoverObserver.disconnect();
+            disarmScrollUnmute();
+            hideSoundPrompt();
+        }
+
+    </script>
+</body>
+
+</html>
