@@ -1468,7 +1468,8 @@
       <div>
         <div class="flex items-center gap-1.5">
           <h1
-            class="text-md font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-500 to-[#8a1538] font-serif italic leading-none"
+            class="text-md font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-500 to-[#8a1538] font-serif italic leading-none cursor-pointer select-none active:opacity-60 transition-opacity"
+            @click="location.reload()"
           >
             StockFlow
           </h1>
@@ -5039,14 +5040,50 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                     stroke-linejoin="round"
                   ></path>
 
+                  <!-- Segment punctat spre ZIUA CURENTĂ: datele de azi sunt parțiale (ziua nu
+                       s-a încheiat), deci le desenăm distinct - astfel linia CHIAR ajunge până
+                       la ultima coloană, dar arată clar că e "în desfășurare", nu o cădere reală. -->
+                  <path
+                    :d="getChartSvgData().achizitiiLineAzi"
+                    fill="none"
+                    stroke="#e11d48"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-dasharray="3 3"
+                    opacity="0.75"
+                  ></path>
+                  <path
+                    :d="getChartSvgData().vanzariLineAzi"
+                    fill="none"
+                    stroke="#0d9488"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-dasharray="3 3"
+                    opacity="0.75"
+                  ></path>
+
                   <template x-for="(p, idx) in getChartSvgData().pointsV" :key="'pv-' + idx">
-                    <circle :cx="p.x" :cy="p.y" r="2.4" fill="#0d9488" stroke="white" stroke-width="1.1">
-                      <title x-text="'Vânzări: ' + formatLei(p.v)"></title>
+                    <circle
+                      :cx="p.x"
+                      :cy="p.y"
+                      :r="p.azi ? 3.2 : 2.4"
+                      fill="#0d9488"
+                      stroke="white"
+                      :stroke-width="p.azi ? 1.6 : 1.1"
+                    >
+                      <title x-text="(p.azi ? 'Azi (parțial) - ' : '') + 'Vânzări: ' + formatLei(p.v)"></title>
                     </circle>
                   </template>
                   <template x-for="(p, idx) in getChartSvgData().pointsA" :key="'pa-' + idx">
-                    <circle :cx="p.x" :cy="p.y" r="2.4" fill="#e11d48" stroke="white" stroke-width="1.1">
-                      <title x-text="'Achiziții: ' + formatLei(p.v)"></title>
+                    <circle
+                      :cx="p.x"
+                      :cy="p.y"
+                      :r="p.azi ? 3.2 : 2.4"
+                      fill="#e11d48"
+                      stroke="white"
+                      :stroke-width="p.azi ? 1.6 : 1.1"
+                    >
+                      <title x-text="(p.azi ? 'Azi (parțial) - ' : '') + 'Achiziții: ' + formatLei(p.v)"></title>
                     </circle>
                   </template>
                 </svg>
@@ -12625,10 +12662,14 @@ culoareAvatarClient(nume) {
           // vânzări, achiziții etc.) - afișează suma cu "lei" (literă mică),
           // ÎNTOTDEAUNA cu 2 zecimale (bănuții se văd mereu, chiar și "00").
           formatLei(val) {
+            let v = val || 0;
+            // Reziduuri de virgulă mobilă (ex: -0.00000001) nu trebuie să apară
+            // niciodată ca "-0,00" pe ecran - le tratăm ca zero pozitiv.
+            if (Math.abs(v) < 0.005) v = 0;
             const numar = new Intl.NumberFormat("ro-MD", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            }).format(val || 0);
+            }).format(v);
             return numar + " lei";
           },
 
@@ -12637,10 +12678,14 @@ culoareAvatarClient(nume) {
           // cu TVA), unde rotunjirea la 0 zecimale ar "mânca" bănuții și ar face
           // suma finală să nu mai corespundă cu factura reală a furnizorului.
           formatLeiPrecis(val) {
+            let v = val || 0;
+            // Reziduuri de virgulă mobilă (ex: -0.00000001) nu trebuie să apară
+            // niciodată ca "-0,00" pe ecran - le tratăm ca zero pozitiv.
+            if (Math.abs(v) < 0.005) v = 0;
             const numar = new Intl.NumberFormat("ro-MD", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            }).format(val || 0);
+            }).format(v);
             return numar + " lei";
           },
 
@@ -12650,10 +12695,14 @@ culoareAvatarClient(nume) {
           // ca pe un card bancar adevărat, unde bănuții se văd mereu, chiar și
           // când sunt "00".
           formatMDL(val) {
+            let v = val || 0;
+            // Reziduuri de virgulă mobilă (ex: -0.00000001) nu trebuie să apară
+            // niciodată ca "-0,00" pe ecran - le tratăm ca zero pozitiv.
+            if (Math.abs(v) < 0.005) v = 0;
             const numar = new Intl.NumberFormat("ro-MD", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            }).format(val || 0);
+            }).format(v);
             return numar + " MDL";
           },
 
@@ -12672,7 +12721,7 @@ culoareAvatarClient(nume) {
             const c = this.conturi.find((x) => x.id === contId);
             if (!c) return { sold: 0, isNegative: false };
             const finalSold = Number(c.sold) + Number(variatieSum || 0);
-            return { sold: finalSold, isNegative: finalSold < 0 };
+            return { sold: finalSold, isNegative: finalSold < -0.005 };
           },
 
           // Culori dinamice tab pasive
@@ -13806,11 +13855,26 @@ culoareAvatarClient(nume) {
             const usableH = h - padTop - padBottom;
             const stepX = n > 1 ? (w - padX * 2) / (n - 1) : 0;
             const scaleY = (v) => padTop + usableH - (v / max) * usableH;
+            // Ziua curentă (dacă suntem pe granularitate "zi") e mereu ultimul punct din
+            // "data", dar are date PARȚIALE (ziua nu s-a încheiat încă) - de asta valoarea ei
+            // e aproape mereu mai mică decât a zilei anterioare complete. Fără să marcăm asta
+            // explicit, graficul pare "rupt"/oprit brusc chiar înainte de azi. Așa că desenăm
+            // ultimul segment (spre azi) punctat, ca să fie limpede că e curent, în desfășurare,
+            // nu o cădere reală - iar linia CHIAR ajunge, vizual, până la ultima coloană.
+            const azi = new Date();
+            const esteZi = this.getChartGranularity() === "zi";
+            const astaziIndex =
+              esteZi && n > 0 &&
+              data[n - 1].key ===
+                azi.getFullYear() + "-" + azi.getMonth() + "-" + azi.getDate()
+                ? n - 1
+                : -1;
             const toPts = (campo) =>
               data.map((m, i) => ({
                 x: n > 1 ? padX + i * stepX : w / 2,
                 y: scaleY(m[campo]),
                 v: m[campo],
+                azi: i === astaziIndex,
               }));
             // Curbă netedă simplă: Bézier cubică între fiecare pereche de puncte,
             // cu punctele de control pe orizontală la jumătatea distanței (efect "linie lină").
@@ -13826,6 +13890,19 @@ culoareAvatarClient(nume) {
               }
               return d;
             };
+            // Segmentul final, punctat, care leagă penultimul punct de ziua curentă (dacă e cazul).
+            const todaySegment = (pts) => {
+              if (astaziIndex < 1 || astaziIndex >= pts.length) return "";
+              const p0 = pts[astaziIndex - 1],
+                p1 = pts[astaziIndex];
+              const cx = (p0.x + p1.x) / 2;
+              return `M ${p0.x} ${p0.y} C ${cx} ${p0.y}, ${cx} ${p1.y}, ${p1.x} ${p1.y}`;
+            };
+            // Restul curbei (fără ultimul segment, dacă acela e cel "de azi" punctat).
+            const mainPath = (pts) => {
+              if (astaziIndex < 1) return smoothPath(pts);
+              return smoothPath(pts.slice(0, astaziIndex));
+            };
             const areaPath = (pts) => {
               if (!pts.length) return "";
               const base = h - padBottom;
@@ -13836,12 +13913,15 @@ culoareAvatarClient(nume) {
             return {
               w,
               h,
-              vanzariLine: smoothPath(ptsV),
+              vanzariLine: mainPath(ptsV),
+              vanzariLineAzi: todaySegment(ptsV),
               vanzariArea: areaPath(ptsV),
-              achizitiiLine: smoothPath(ptsA),
+              achizitiiLine: mainPath(ptsA),
+              achizitiiLineAzi: todaySegment(ptsA),
               achizitiiArea: areaPath(ptsA),
               pointsV: ptsV,
               pointsA: ptsA,
+              astaziIndex,
             };
           },
 
