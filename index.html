@@ -11397,6 +11397,17 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                 </svg>
               </div>
+              <button
+                type="button"
+                x-show="scanListaCamere.length > 1"
+                @click="schimbaCamera()"
+                class="absolute top-2 right-2 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center active:scale-90 transition"
+                aria-label="Schimbă camera"
+              >
+                <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-5M20 15a8 8 0 01-14 5" />
+                </svg>
+              </button>
             </div>
             <p class="text-[11px] text-slate-400 text-center">
               Centrează codul de bare în interiorul cadrului
@@ -11457,6 +11468,17 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                 </svg>
               </div>
+              <button
+                type="button"
+                x-show="scanListaCamere.length > 1"
+                @click="schimbaCamera()"
+                class="absolute top-2 right-2 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center active:scale-90 transition"
+                aria-label="Schimbă camera"
+              >
+                <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-5M20 15a8 8 0 01-14 5" />
+                </svg>
+              </button>
             </div>
             <p class="text-[11px] text-slate-400 text-center">
               Încadrează zona cu textul dorit și fă o poză
@@ -12041,6 +12063,8 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           html5Qrcode: null,
           scanCameraPornita: false,
           scanCameraAspect: null,
+          scanListaCamere: [],
+          scanCameraIdxCurent: -1,
           scanTextPozaAspect: null,
           scanBarcodePauzat: false,
           scanBarcodeRezultat: "",
@@ -17732,51 +17756,59 @@ culoareAvatarClient(nume) {
                 // virtuale/webcam gen OBS) ignoră constrângerea și trimit tot 16:9.
                 videoConstraints: { aspectRatio: { ideal: 0.75 } },
               };
-              // Găsește id-ul camerei din spate căutând în etichetele dispozitivelor.
-              // IMPORTANT: pe Android instalat ca PWA/WebView, { facingMode: { exact:
-              // "environment" } } uneori NU aruncă eroare - browserul pur și simplu
-              // ignoră constrângerea și pornește camera implicită (adesea cea din
-              // față) fără să treacă prin catch-ul de mai jos. De aceea preferăm
-              // selecția explicită după deviceId (mult mai fiabilă în PWA), și
-              // folosim facingMode doar ca ultimă variantă.
-              const găseșteIdCameraSpate = async () => {
+              // Populăm lista de camere disponibile (id + label), ca utilizatorul
+              // să poată comuta manual cu butonul de "schimbă camera" dacă
+              // ghicitul automat al camerei din spate nu e corect pe telefonul lui
+              // (etichetele camerelor variază enorm între producători Android).
+              try {
+                // Cerem întâi o permisiune generică de cameră - pe multe telefoane
+                // etichetele (label) camerelor sunt goale până la acordarea
+                // permisiunii, ceea ce ar face detectarea de mai jos să eșueze.
                 try {
-                  // Cerem întâi o permisiune generică de cameră - pe multe telefoane
-                  // etichetele (label) camerelor sunt goale până la acordarea
-                  // permisiunii, ceea ce ar face regex-ul de mai jos să eșueze mereu.
-                  try {
-                    const permStream = await navigator.mediaDevices.getUserMedia({
-                      video: true,
-                    });
-                    permStream.getTracks().forEach((t) => t.stop());
-                  } catch (e) {}
-                  const camere = await Html5Qrcode.getCameras();
-                  if (!camere || !camere.length) return null;
-                  if (camere.length === 1) return camere[0].id;
-                  const spate = camere.find((c) =>
+                  const permStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                  });
+                  permStream.getTracks().forEach((t) => t.stop());
+                } catch (e) {}
+                this.scanListaCamere = (await Html5Qrcode.getCameras()) || [];
+              } catch (e) {
+                this.scanListaCamere = [];
+              }
+
+              // Alegem camera de pornit, în ordine de prioritate:
+              // 1) alegerea manuală salvată anterior de utilizator (dacă mai există
+              //    printre camerele disponibile acum);
+              // 2) o cameră cu etichetă clară de "back/rear/spate";
+              // 3) prima cameră care NU are etichetă de "front/selfie";
+              // 4) prima cameră din listă.
+              let idxAles = -1;
+              if (this.scanListaCamere.length) {
+                const idSalvat = localStorage.getItem("scanCameraIdSalvat");
+                if (idSalvat) {
+                  idxAles = this.scanListaCamere.findIndex(
+                    (c) => c.id === idSalvat,
+                  );
+                }
+                if (idxAles === -1) {
+                  idxAles = this.scanListaCamere.findIndex((c) =>
                     /back|rear|environment|spate/i.test(c.label || ""),
                   );
-                  if (spate) return spate.id;
-                  // Dacă nu găsim un label clar de "back", excludem explicit orice
-                  // camera etichetată drept frontală/selfie...
-                  const fataRegex = /front|user|selfie|fata|față/i;
-                  const nonFata = camere.filter(
-                    (c) => !fataRegex.test(c.label || ""),
-                  );
-                  if (nonFata.length) return nonFata[0].id;
-                  // ...și doar dacă tot nu putem decide, luăm prima din listă.
-                  return camere[0].id;
-                } catch (e) {
-                  return null;
                 }
-              };
-              // Pornim direct cu deviceId-ul camerei din spate identificat mai sus -
-              // ocolim complet facingMode, care s-a dovedit nesigur în PWA pe Android.
-              const idSpate = await găseșteIdCameraSpate();
+                if (idxAles === -1) {
+                  idxAles = this.scanListaCamere.findIndex(
+                    (c) => !/front|user|selfie|fata|față/i.test(c.label || ""),
+                  );
+                }
+                if (idxAles === -1) idxAles = 0;
+              }
+              this.scanCameraIdxCurent = idxAles;
+              const idAles =
+                idxAles !== -1 ? this.scanListaCamere[idxAles].id : null;
+
               try {
-                if (idSpate) {
+                if (idAles) {
                   await this.html5Qrcode.start(
-                    idSpate,
+                    idAles,
                     opțiuniCameră,
                     (t) => this.pePeDecodareBarcode(t),
                     () => {},
@@ -17812,6 +17844,28 @@ culoareAvatarClient(nume) {
               alert("Eroare cameră: " + (e && e.message ? e.message : e));
               this.opresteScanner();
             }
+          },
+          // Comută manual pe următoarea cameră din listă (buton "schimbă camera") -
+          // util când detectarea automată a camerei din spate nu nimerește corect
+          // pe telefonul curent. Reține alegerea în localStorage, ca la următoarele
+          // scanări să pornească direct pe camera corectă.
+          async schimbaCamera() {
+            if (!this.scanListaCamere || this.scanListaCamere.length < 2) return;
+            const urmatorulIdx =
+              (this.scanCameraIdxCurent + 1) % this.scanListaCamere.length;
+            const urmatoarea = this.scanListaCamere[urmatorulIdx];
+            localStorage.setItem("scanCameraIdSalvat", urmatoarea.id);
+            this.scanCameraIdxCurent = urmatorulIdx;
+            if (this.html5Qrcode) {
+              try {
+                await this.html5Qrcode.stop();
+              } catch (e) {}
+              try {
+                this.html5Qrcode.clear();
+              } catch (e) {}
+              this.html5Qrcode = null;
+            }
+            await this.porneCamera();
           },
           // Citește dimensiunile reale ale fluxului video și setează aspect-ratio-ul
           // containerului să corespundă exact - elimină crop-ul/zoom-ul artificial care
