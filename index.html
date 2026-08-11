@@ -17732,40 +17732,48 @@ culoareAvatarClient(nume) {
                 // virtuale/webcam gen OBS) ignoră constrângerea și trimit tot 16:9.
                 videoConstraints: { aspectRatio: { ideal: 0.75 } },
               };
-              // Găsește id-ul camerei din spate căutând în etichetele dispozitivelor
-              // (Android/desktop expun de obicei cuvinte precum "back"/"rear" în label).
-              // Facem asta ca fallback pentru cazul în care
-              // { facingMode: { exact: "environment" } } eșuează mai jos.
+              // Găsește id-ul camerei din spate căutând în etichetele dispozitivelor.
+              // IMPORTANT: pe Android instalat ca PWA/WebView, { facingMode: { exact:
+              // "environment" } } uneori NU aruncă eroare - browserul pur și simplu
+              // ignoră constrângerea și pornește camera implicită (adesea cea din
+              // față) fără să treacă prin catch-ul de mai jos. De aceea preferăm
+              // selecția explicită după deviceId (mult mai fiabilă în PWA), și
+              // folosim facingMode doar ca ultimă variantă.
               const găseșteIdCameraSpate = async () => {
                 try {
+                  // Cerem întâi o permisiune generică de cameră - pe multe telefoane
+                  // etichetele (label) camerelor sunt goale până la acordarea
+                  // permisiunii, ceea ce ar face regex-ul de mai jos să eșueze mereu.
+                  try {
+                    const permStream = await navigator.mediaDevices.getUserMedia({
+                      video: true,
+                    });
+                    permStream.getTracks().forEach((t) => t.stop());
+                  } catch (e) {}
                   const camere = await Html5Qrcode.getCameras();
                   if (!camere || !camere.length) return null;
+                  if (camere.length === 1) return camere[0].id;
                   const spate = camere.find((c) =>
                     /back|rear|environment|spate/i.test(c.label || ""),
                   );
-                  // Dacă nu găsim un label clar și avem mai multe camere, ultima din listă
-                  // e de obicei camera principală din spate pe telefoane Android.
-                  return spate ? spate.id : camere[camere.length - 1].id;
+                  if (spate) return spate.id;
+                  // Dacă nu găsim un label clar de "back", excludem explicit orice
+                  // camera etichetată drept frontală/selfie...
+                  const fataRegex = /front|user|selfie|fata|față/i;
+                  const nonFata = camere.filter(
+                    (c) => !fataRegex.test(c.label || ""),
+                  );
+                  if (nonFata.length) return nonFata[0].id;
+                  // ...și doar dacă tot nu putem decide, luăm prima din listă.
+                  return camere[0].id;
                 } catch (e) {
                   return null;
                 }
               };
+              // Pornim direct cu deviceId-ul camerei din spate identificat mai sus -
+              // ocolim complet facingMode, care s-a dovedit nesigur în PWA pe Android.
+              const idSpate = await găseșteIdCameraSpate();
               try {
-                // Primul parametru acceptă o SINGURĂ cheie (facingMode SAU deviceId) -
-                // orice constrângere suplimentară (ex. aspectRatio) trebuie pusă în
-                // videoConstraints, în cel de-al doilea parametru. Folosim "exact" ca să
-                // FORȚĂM camera din spate - simplul { facingMode: "environment" } e doar
-                // o preferință și pe unele telefoane pornea totuși camera din față.
-                await this.html5Qrcode.start(
-                  { facingMode: { exact: "environment" } },
-                  opțiuniCameră,
-                  (t) => this.pePeDecodareBarcode(t),
-                  () => {},
-                );
-              } catch (e) {
-                // Fallback: unele browsere/telefoane nu suportă "exact" - încercăm să
-                // pornim direct camera din spate identificată după deviceId.
-                const idSpate = await găseșteIdCameraSpate();
                 if (idSpate) {
                   await this.html5Qrcode.start(
                     idSpate,
@@ -17774,7 +17782,19 @@ culoareAvatarClient(nume) {
                     () => {},
                   );
                 } else {
-                  // Ultimă variantă: preferința simplă (fără "exact").
+                  throw new Error("Nu am putut identifica deviceId-ul camerei.");
+                }
+              } catch (e) {
+                // Fallback 1: forțăm explicit camera din spate prin facingMode.
+                try {
+                  await this.html5Qrcode.start(
+                    { facingMode: { exact: "environment" } },
+                    opțiuniCameră,
+                    (t) => this.pePeDecodareBarcode(t),
+                    () => {},
+                  );
+                } catch (e2) {
+                  // Fallback 2 (ultimă variantă): preferința simplă, fără "exact".
                   await this.html5Qrcode.start(
                     { facingMode: "environment" },
                     opțiuniCameră,
