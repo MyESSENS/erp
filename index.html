@@ -12064,6 +12064,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
           scanCameraPornita: false,
           scanCameraAspect: null,
           scanListaCamere: [],
+          scanCamereDetectate: false, // devine true după prima detectare de camere din sesiune
           scanCameraIdxCurent: -1,
           scanTextPozaAspect: null,
           scanBarcodePauzat: false,
@@ -17716,7 +17717,22 @@ culoareAvatarClient(nume) {
           async porneCamera() {
             this.scanCameraPornita = false;
             await this.$nextTick();
-            await new Promise((r) => setTimeout(r, 200));
+            // Așteptăm ca elementul #camera-frame să fie efectiv montat în DOM (template-ul
+            // x-if poate întârzia montarea cu un frame suplimentar față de $nextTick). Poll
+            // rapid pe requestAnimationFrame în loc de o întârziere FIXĂ de 200ms - de obicei
+            // se rezolvă în 1-2 frame-uri (~16-32ms), plafonat la 20 de frame-uri ca plasă de
+            // siguranță, ca să nu mai plătim cost inutil de timp la fiecare pornire a camerei.
+            await new Promise((resolve) => {
+              let incercari = 0;
+              const verifica = () => {
+                if (document.getElementById("camera-frame") || incercari++ > 20) {
+                  resolve();
+                } else {
+                  requestAnimationFrame(verifica);
+                }
+              };
+              requestAnimationFrame(verifica);
+            });
             try {
               if (this.html5Qrcode) {
                 try {
@@ -17761,50 +17777,78 @@ culoareAvatarClient(nume) {
               // să poată comuta manual cu butonul de "schimbă camera" dacă
               // ghicitul automat al camerei din spate nu e corect pe telefonul lui
               // (etichetele camerelor variază enorm între producători Android).
-              try {
-                // Cerem întâi o permisiune generică de cameră - pe multe telefoane
-                // etichetele (label) camerelor sunt goale până la acordarea
-                // permisiunii, ceea ce ar face detectarea de mai jos să eșueze.
+              //
+              // Facem asta O SINGURĂ DATĂ per sesiune (cât timp pagina rămâne încărcată):
+              // lista de camere a telefonului nu se schimbă în timp ce aplicația rulează,
+              // deci re-enumerarea (și, mai ales, a doua deschidere de cameră doar pentru
+              // "priming") la fiecare scanare era cost real de hardware plătit degeaba -
+              // în special prima deschidere a camerei, care e cea mai lentă.
+              if (!this.scanCamereDetectate) {
                 try {
-                  const permStream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                  });
-                  permStream.getTracks().forEach((t) => t.stop());
-                } catch (e) {}
-                this.scanListaCamere = (await Html5Qrcode.getCameras()) || [];
-              } catch (e) {
-                this.scanListaCamere = [];
-              }
+                  // Cerem o permisiune/stream doar dacă chiar avem nevoie - pe multe telefoane
+                  // etichetele (label) camerelor sunt goale până la acordarea permisiunii, ceea
+                  // ce ar face detectarea de mai jos să eșueze. Dar dacă permisiunea e DEJA
+                  // acordată (Permissions API), enumerateDevices() ne dă etichetele direct, fără
+                  // să mai deschidem un stream separat doar ca să "amorsăm" - sărim priming-ul.
+                  let permisiuneAcordata = false;
+                  try {
+                    if (navigator.permissions && navigator.permissions.query) {
+                      const status = await navigator.permissions.query({
+                        name: "camera",
+                      });
+                      permisiuneAcordata = status.state === "granted";
+                    }
+                  } catch (e) {}
+                  if (!permisiuneAcordata) {
+                    try {
+                      const permStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                      });
+                      permStream.getTracks().forEach((t) => t.stop());
+                    } catch (e) {}
+                  }
+                  this.scanListaCamere = (await Html5Qrcode.getCameras()) || [];
+                } catch (e) {
+                  this.scanListaCamere = [];
+                }
+                this.scanCamereDetectate = true;
 
-              // Alegem camera de pornit, în ordine de prioritate:
-              // 1) alegerea manuală salvată anterior de utilizator (dacă mai există
-              //    printre camerele disponibile acum);
-              // 2) o cameră cu etichetă clară de "back/rear/spate";
-              // 3) prima cameră care NU are etichetă de "front/selfie";
-              // 4) prima cameră din listă.
-              let idxAles = -1;
-              if (this.scanListaCamere.length) {
-                const idSalvat = localStorage.getItem("scanCameraIdSalvat");
-                if (idSalvat) {
-                  idxAles = this.scanListaCamere.findIndex(
-                    (c) => c.id === idSalvat,
-                  );
+                // Alegem camera de pornit, în ordine de prioritate:
+                // 1) alegerea manuală salvată anterior de utilizator (dacă mai există
+                //    printre camerele disponibile acum);
+                // 2) o cameră cu etichetă clară de "back/rear/spate";
+                // 3) prima cameră care NU are etichetă de "front/selfie";
+                // 4) prima cameră din listă.
+                let idxAles = -1;
+                if (this.scanListaCamere.length) {
+                  const idSalvat = localStorage.getItem("scanCameraIdSalvat");
+                  if (idSalvat) {
+                    idxAles = this.scanListaCamere.findIndex(
+                      (c) => c.id === idSalvat,
+                    );
+                  }
+                  if (idxAles === -1) {
+                    idxAles = this.scanListaCamere.findIndex((c) =>
+                      /back|rear|environment|spate/i.test(c.label || ""),
+                    );
+                  }
+                  if (idxAles === -1) {
+                    idxAles = this.scanListaCamere.findIndex(
+                      (c) => !/front|user|selfie|fata|față/i.test(c.label || ""),
+                    );
+                  }
+                  if (idxAles === -1) idxAles = 0;
                 }
-                if (idxAles === -1) {
-                  idxAles = this.scanListaCamere.findIndex((c) =>
-                    /back|rear|environment|spate/i.test(c.label || ""),
-                  );
-                }
-                if (idxAles === -1) {
-                  idxAles = this.scanListaCamere.findIndex(
-                    (c) => !/front|user|selfie|fata|față/i.test(c.label || ""),
-                  );
-                }
-                if (idxAles === -1) idxAles = 0;
+                this.scanCameraIdxCurent = idxAles;
               }
-              this.scanCameraIdxCurent = idxAles;
+              // La reveniri ulterioare în aceeași sesiune (schimbare mod, "încearcă din nou",
+              // etc.), scanCameraIdxCurent e deja stabilit mai sus sau de schimbaCamera() -
+              // refolosim direct camera curentă din listă, fără nicio redetectare.
               const idAles =
-                idxAles !== -1 ? this.scanListaCamere[idxAles].id : null;
+                this.scanCameraIdxCurent !== -1 &&
+                this.scanListaCamere[this.scanCameraIdxCurent]
+                  ? this.scanListaCamere[this.scanCameraIdxCurent].id
+                  : null;
 
               try {
                 if (idAles) {
