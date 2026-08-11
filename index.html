@@ -7049,7 +7049,7 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                       </p>
                       <p
                         class="text-[10px] text-slate-400 font-medium"
-                        x-text="(item.cantitate || 0) + ' buc × ' + formatLeiPrecis(item.pret_achizitie || 0) + ' (preț final, cu TVA)'"
+                        x-text="(item.cantitate || 0) + ' buc × ' + formatLeiPrecis(item.pret_fara_tva || 0) + ' fără TVA → ' + formatLeiPrecis(item.pret_achizitie || 0) + ' cu TVA'"
                       ></p>
                     </div>
                     <div class="text-right flex-shrink-0">
@@ -7103,11 +7103,12 @@ Dacă lipsește o informație esențială (ex: nu găsești produsul, sau nu șt
                       </button>
                     </div>
                     <div class="relative flex-1">
-                      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold uppercase pointer-events-none">Preț final</span>
+                      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold uppercase pointer-events-none">Preț fără TVA</span>
                       <input
                         type="number"
-                        x-model.number.lazy="item.pret_achizitie"
-                        class="w-full glass-input rounded-full pl-16 pr-2.5 py-2 text-xs text-right text-slate-800 font-semibold"
+                        x-model.number.lazy="item.pret_fara_tva"
+                        @change="actualizeazaPretCuTVAAchizitii(item)"
+                        class="w-full glass-input rounded-full pl-20 pr-2.5 py-2 text-xs text-right text-slate-800 font-semibold"
                       />
                     </div>
                   </div>
@@ -14802,11 +14803,17 @@ culoareAvatarClient(nume) {
 
               // Inserare directă în coș (nu reutilizăm adaugaInCosAchizitii, ca să putem
               // seta chiar cantitatea și prețul de pe factură, nu doar +1 la fiecare atingere).
+              // pret e deja prețul FINAL, cu TVA, citit direct de pe factură (vezi instrucțiunile
+              // tool-ului) - completăm și pret_fara_tva (derivat, /1.2) doar ca să rămână
+              // consistent cu câmpul editabil din coș, dacă utilizatorul vrea să-l corecteze.
               const idxCos = this.cosAchizitii.findIndex((i) => i.id === produsId);
               if (idxCos !== -1) {
                 const it = this.cosAchizitii[idxCos];
                 it.cantitate = (Number(it.cantitate) || 0) + cantitate;
-                if (pret > 0) it.pret_achizitie = pret;
+                if (pret > 0) {
+                  it.pret_achizitie = pret;
+                  it.pret_fara_tva = pret / 1.2;
+                }
                 this.cosAchizitii.splice(idxCos, 1);
                 this.cosAchizitii.unshift(it);
               } else {
@@ -14815,6 +14822,7 @@ culoareAvatarClient(nume) {
                   denumire_produs: denumireFinala,
                   cantitate,
                   pret_achizitie: pret,
+                  pret_fara_tva: pret / 1.2,
                   poza_produs: pozaProdus,
                   record_snapshot: recordSnapshot,
                   nou: esteNou,
@@ -14845,11 +14853,17 @@ culoareAvatarClient(nume) {
               this.cosAchizitii.splice(idxExistent, 1);
               this.cosAchizitii.unshift(existent);
             } else {
+              // pret_cost_mediu e costul mediu ponderat existent, deja "final" (cu TVA
+              // inclus) - îl folosim ca punct de plecare pentru prețul final, dar afișăm
+              // în câmpul editabil valoarea FĂRĂ TVA corespunzătoare (împărțit la 1.2),
+              // ca utilizatorul să vadă/editeze mereu prețul fără TVA, nu cel final.
+              const pretFinal = Number(p.pret_cost_mediu) || 0;
               this.cosAchizitii.unshift({
                 id: p.id,
                 denumire_produs: p.denumire_produs,
                 cantitate: 1,
-                pret_achizitie: p.pret_cost_mediu,
+                pret_achizitie: pretFinal,
+                pret_fara_tva: pretFinal / 1.2,
                 poza_produs: p.poza_produs || null,
                 record_snapshot: p.record_snapshot || null,
               });
@@ -14869,6 +14883,15 @@ culoareAvatarClient(nume) {
           },
           clampCantitateAchizitii(item) {
             if (!item.cantitate || item.cantitate < 1) item.cantitate = 1;
+          },
+          // Utilizatorul introduce manual prețul FĂRĂ TVA per produs (item.pret_fara_tva);
+          // aplicația adaugă automat TVA 20% și reține rezultatul în item.pret_achizitie,
+          // care rămâne "prețul final" folosit mai departe în tot restul aplicației
+          // (subtotal, cost mediu ponderat, rapoarte etc.) - nimic altceva nu se schimbă,
+          // se schimbă doar CE introduce utilizatorul cu mâna.
+          actualizeazaPretCuTVAAchizitii(item) {
+            const faraTva = Number(item.pret_fara_tva) || 0;
+            item.pret_achizitie = faraTva * 1.2;
           },
           totalCosAchizitii() {
             // Subtotal produse - pret_achizitie introdus per produs este prețul FINAL,
